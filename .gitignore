@@ -1,0 +1,75 @@
+# ==============================================
+# LARAVEL - ENVIRONMENT & SECRETS
+# ==============================================
+.env
+.env.backup
+.env.production
+.env.staging
+/auth.json
+/storage/*.key
+
+# ==============================================
+# LARAVEL - DEPENDENCIES (generate via composer/npm)
+# ==============================================
+/vendor
+/node_modules
+
+# ==============================================
+# LARAVEL - GENERATED BUILD & CACHE
+# ==============================================
+/public/build
+/public/hot
+/bootstrap/cache/*.php
+/bootstrap/ssr
+
+# ==============================================
+# LARAVEL - STORAGE (runtime files)
+# Folder storage/ tetap ada di repo (via .gitkeep)
+# tapi isinya (file upload, cache, log) diabaikan
+# ==============================================
+/storage/logs/*.log
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/pail
+
+# ==============================================
+# LARAVEL - SYMLINK PUBLIC STORAGE
+# ==============================================
+/public/storage
+
+# ==============================================
+# TESTING & DEBUGGING
+# ==============================================
+.phpunit.result.cache
+/.phpunit.cache
+/phpunit.result.cache
+
+# ==============================================
+# EDITOR & IDE FILES
+# ==============================================
+.DS_Store
+Thumbs.db
+/.idea
+/.vscode
+/.nova
+/.fleet
+/.zed
+/.phpactor.json
+*.swp
+*.swo
+*~
+
+# ==============================================
+# MISC
+# ==============================================
+*.log
+Homestead.json
+Homestead.yaml
+npm-debug.log*
+yarn-error.log
+/postcss.config.js.bak
+/tailwind.config.js.bak
