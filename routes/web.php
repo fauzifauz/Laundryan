@@ -18,6 +18,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         $role = auth()->user()->role;
         if ($role === 'admin') {
             return redirect()->route('admin.orders.show', $order);
+        } elseif ($role === 'karyawan') {
+            return redirect()->route('karyawan.orders.show', $order);
         } elseif ($role === 'kurir') {
             return redirect()->route('kurir.orders.show', $order);
         } elseif ($role === 'pelanggan') {
@@ -138,13 +140,36 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
 Route::middleware(['auth', 'verified', 'role:karyawan'])->prefix('karyawan')->name('karyawan.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Employee\OrderController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export/pdf', [\App\Http\Controllers\Employee\OrderController::class, 'exportPdf'])->name('export.pdf');
+    Route::get('/dashboard/export/csv', [\App\Http\Controllers\Employee\OrderController::class, 'exportCsv'])->name('export.csv');
+    Route::get('/orders/export/pdf', [\App\Http\Controllers\Employee\OrderController::class, 'ordersExportPdf'])->name('orders.export.pdf');
+    Route::get('/orders/export/csv', [\App\Http\Controllers\Employee\OrderController::class, 'ordersExportCsv'])->name('orders.export.csv');
+    Route::get('/orders/create', [\App\Http\Controllers\Employee\OrderController::class, 'create'])->name('orders.create');
+    Route::post('/orders', [\App\Http\Controllers\Employee\OrderController::class, 'store'])->name('orders.store');
     Route::post('/orders/{order}/status', [\App\Http\Controllers\Employee\OrderController::class, 'updateStatus'])->name('orders.status');
+    Route::post('/orders/{order}/assign', [\App\Http\Controllers\Employee\OrderController::class, 'assignCourier'])->name('orders.assign');
+    Route::get('/orders', [\App\Http\Controllers\Employee\OrderController::class, 'ordersIndex'])->name('orders.index');
+    Route::get('/orders/{order}/edit', [\App\Http\Controllers\Employee\OrderController::class, 'edit'])->name('orders.edit');
+    Route::put('/orders/{order}', [\App\Http\Controllers\Employee\OrderController::class, 'update'])->name('orders.update');
+    Route::delete('/orders/{order}', [\App\Http\Controllers\Employee\OrderController::class, 'destroy'])->name('orders.destroy');
+    Route::get('/orders/{order}', [\App\Http\Controllers\Employee\OrderController::class, 'show'])->name('orders.show');
     
     // Attendance
     Route::get('/attendance', [\App\Http\Controllers\Employee\AttendanceController::class, 'index'])->name('attendance.index');
     Route::post('/attendance/check-in', [\App\Http\Controllers\Employee\AttendanceController::class, 'checkIn'])->name('attendance.check-in');
     Route::post('/attendance/check-out', [\App\Http\Controllers\Employee\AttendanceController::class, 'checkOut'])->name('attendance.check-out');
     Route::post('/attendance/request', [\App\Http\Controllers\Employee\AttendanceController::class, 'applyPermitLeave'])->name('attendance.request');
+
+    // Tracking
+    Route::get('/tracking', [\App\Http\Controllers\Employee\TrackingController::class, 'index'])->name('tracking.index');
+    Route::get('/tracking/data', [\App\Http\Controllers\Employee\TrackingController::class, 'data'])->name('tracking.data');
+
+    // Salary
+    Route::get('/salary', [\App\Http\Controllers\Employee\SalaryController::class, 'index'])->name('salary.index');
+    Route::post('/salary/{payroll}/withdraw', [\App\Http\Controllers\Employee\SalaryController::class, 'withdraw'])->name('salary.withdraw');
+    Route::get('/salary/export/pdf', [\App\Http\Controllers\Employee\SalaryController::class, 'exportPdf'])->name('salary.export.pdf');
+    Route::get('/salary/export/csv', [\App\Http\Controllers\Employee\SalaryController::class, 'exportCsv'])->name('salary.export.csv');
+    Route::get('/salary/{payroll}/payslip/pdf', [\App\Http\Controllers\Employee\SalaryController::class, 'downloadPayslipPdf'])->name('salary.payslip.pdf');
 });
 
 Route::middleware(['auth', 'verified', 'role:kurir'])->prefix('kurir')->name('kurir.')->group(function () {

@@ -178,9 +178,21 @@
                 @endif
 
                 @if(Auth::user()->role === 'karyawan')
+                    <x-sidebar-link :href="route('karyawan.tracking.index')"
+                        :active="request()->routeIs('karyawan.tracking.*')" icon="location_on">
+                        Tracking
+                    </x-sidebar-link>
                     <x-sidebar-link :href="route('karyawan.attendance.index')"
                         :active="request()->routeIs('karyawan.attendance.*')" icon="timer">
                         Check In/Out
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('karyawan.salary.index')"
+                        :active="request()->routeIs('karyawan.salary.*')" icon="wallet">
+                        Salary
+                    </x-sidebar-link>
+                    <x-sidebar-link :href="route('karyawan.orders.index')"
+                        :active="request()->routeIs('karyawan.orders.*')" icon="shopping_basket">
+                        Order
                     </x-sidebar-link>
                 @endif
 

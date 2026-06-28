@@ -1209,9 +1209,18 @@
                                         <td class="px-3.5 py-2.5 text-right font-black text-emerald-600" x-text="'+ ' + formatRupiah(activePayroll.bonus)"></td>
                                     </tr>
                                     <tr class="bg-rose-50/5 hover:bg-rose-50/10 transition-colors">
-                                        <td class="px-3.5 py-2.5 font-bold text-rose-600">Attendance Deductions</td>
-                                        <td class="px-3.5 py-2.5 text-right font-black text-rose-600" x-text="'- ' + formatRupiah(activePayroll.potongan)"></td>
+                                        <td class="px-3.5 py-2.5 font-bold text-rose-600">Other Attendance Deductions</td>
+                                        <td class="px-3.5 py-2.5 text-right font-black text-rose-600" x-text="'- ' + formatRupiah(Math.max(0, Number(activePayroll.potongan || 0) - Number(activePayroll.alpha_deduction || 0)))"></td>
                                     </tr>
+                                    <template x-if="Number(activePayroll.alpha_deduction || 0) > 0">
+                                        <tr class="bg-rose-50/10 hover:bg-rose-50/20 transition-colors">
+                                            <td class="px-3.5 py-2.5 font-bold text-rose-700">
+                                                Alpha Penalty (5%)
+                                                <span class="block text-[9px] font-medium text-rose-500 normal-case mt-0.5" x-text="(activePayroll.alpha_count || 0) + ' unexcused absences this month'"></span>
+                                            </td>
+                                            <td class="px-3.5 py-2.5 text-right font-black text-rose-700" x-text="'- ' + formatRupiah(activePayroll.alpha_deduction)"></td>
+                                        </tr>
+                                    </template>
                                 </tbody>
                                 <tfoot>
                                     <tr class="bg-blue-50/80 font-black text-xs text-blue-900 border-t border-blue-100">

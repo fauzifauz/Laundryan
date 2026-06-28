@@ -19,7 +19,7 @@ class DashboardController extends Controller
         }
 
         if ($user->role === 'karyawan') {
-            return (new EmployeeDashboardController())->index();
+            return (new EmployeeDashboardController())->index($request);
         }
 
         if ($user->role === 'kurir') {

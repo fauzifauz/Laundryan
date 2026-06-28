@@ -11,6 +11,8 @@ class Payroll extends Model
         'amount',
         'bonus',
         'potongan',
+        'alpha_count',
+        'alpha_deduction',
         'month',
         'year',
         'status',

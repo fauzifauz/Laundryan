@@ -15,7 +15,16 @@ class AttendanceController extends Controller
             ->where('date', Carbon::today())
             ->first();
 
-        return view('kurir.attendance.index', compact('attendance'));
+        $leaveQuotaUsed = Attendance::leavePermissionQuotaUsed(auth()->id());
+        $leaveQuotaMax = Attendance::LEAVE_PERMISSION_QUOTA_PER_YEAR;
+        $canSubmitLeaveRequest = Attendance::canSubmitLeavePermission(auth()->id());
+
+        return view('kurir.attendance.index', compact(
+            'attendance',
+            'leaveQuotaUsed',
+            'leaveQuotaMax',
+            'canSubmitLeaveRequest'
+        ));
     }
 
     public function checkIn(Request $request)
@@ -94,6 +103,10 @@ class AttendanceController extends Controller
 
         if ($existing) {
             return redirect()->back()->with('error', 'Attendance record already exists for the selected date.');
+        }
+
+        if (!Attendance::canSubmitLeavePermission(auth()->id())) {
+            return redirect()->back()->with('error', 'Your annual leave/permission quota has been fully used. You cannot submit another request this year.');
         }
 
         // Handle file upload

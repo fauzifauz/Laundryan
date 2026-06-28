@@ -50,6 +50,24 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_users_can_not_authenticate_with_invalid_captcha(): void
+    {
+        $user = User::factory()->create();
+
+        $this->get('/login');
+        $captcha = session('math_captcha_result');
+        $wrongCaptcha = $captcha + 1;
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+            'captcha' => $wrongCaptcha,
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('captcha');
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

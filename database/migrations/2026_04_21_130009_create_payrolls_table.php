@@ -17,6 +17,8 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->decimal('bonus', 15, 2)->default(0);
             $table->decimal('potongan', 15, 2)->default(0);
+            $table->unsignedSmallInteger('alpha_count')->default(0);
+            $table->decimal('alpha_deduction', 15, 2)->default(0);
             $table->integer('month');
             $table->integer('year');
             $table->string('status')->default('pending'); // pending, paid

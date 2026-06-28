@@ -131,4 +131,97 @@ class PayrollManagementTest extends TestCase
         $response->assertSessionMissing('success');
         $response->assertSessionHas('warning', 'Payroll for July 2026 has already been generated.');
     }
+
+    public function test_employee_salary_page_shows_last_withdrawn_and_all_withdrawable_payrolls(): void
+    {
+        $withdrawn = Payroll::create([
+            'user_id' => $this->employee->id,
+            'amount' => 4000000,
+            'bonus' => 0,
+            'potongan' => 0,
+            'month' => 4,
+            'year' => 2026,
+            'status' => 'paid',
+            'payment_method' => 'stripe',
+            'payment_date' => now()->subDays(5),
+            'stripe_transfer_id' => 'WDL-STRIPE-TEST',
+        ]);
+
+        Payroll::create([
+            'user_id' => $this->employee->id,
+            'amount' => 5000000,
+            'bonus' => 0,
+            'potongan' => 0,
+            'month' => 5,
+            'year' => 2026,
+            'status' => 'pending',
+        ]);
+
+        Payroll::create([
+            'user_id' => $this->employee->id,
+            'amount' => 5000000,
+            'bonus' => 0,
+            'potongan' => 0,
+            'month' => 6,
+            'year' => 2026,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->employee)->get(route('karyawan.salary.index'));
+
+        $response->assertOk();
+        $response->assertSee('Current Statement');
+        $response->assertSee('April 2026');
+        $response->assertSee('Last successfully withdrawn');
+        $response->assertSee('May 2026');
+        $response->assertSee('June 2026');
+        $response->assertSee('PAY-' . sprintf('%04d', $withdrawn->id));
+    }
+
+    public function test_employee_can_withdraw_pending_payroll(): void
+    {
+        $payroll = Payroll::create([
+            'user_id' => $this->employee->id,
+            'amount' => 5000000,
+            'bonus' => 0,
+            'potongan' => 0,
+            'month' => 6,
+            'year' => 2026,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->actingAs($this->employee)->post(route('karyawan.salary.withdraw', $payroll), [
+            'payment_method' => 'stripe',
+            'stripe_account_id' => 'acct_test123',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success', 'Your salary has been withdrawn successfully.');
+        $response->assertSessionHas('toast_title', 'Salary Withdrawn Successfully');
+        $this->assertEquals('paid', $payroll->fresh()->status);
+    }
+
+    public function test_employee_cannot_withdraw_already_paid_payroll(): void
+    {
+        $payroll = Payroll::create([
+            'user_id' => $this->employee->id,
+            'amount' => 5000000,
+            'bonus' => 0,
+            'potongan' => 0,
+            'month' => 6,
+            'year' => 2026,
+            'status' => 'paid',
+            'payment_method' => 'stripe',
+            'payment_date' => now(),
+        ]);
+
+        $response = $this->actingAs($this->employee)->post(route('karyawan.salary.withdraw', $payroll), [
+            'payment_method' => 'stripe',
+            'stripe_account_id' => 'acct_test123',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('error', 'This payroll is not available for withdrawal.');
+        $response->assertSessionMissing('success');
+    }
 }

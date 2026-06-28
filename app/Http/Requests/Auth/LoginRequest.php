@@ -32,16 +32,11 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+            'captcha' => ['required', 'numeric'],
         ];
-
-        if (!app()->environment('local')) {
-            $rules['captcha'] = ['required', 'numeric'];
-        }
-
-        return $rules;
     }
 
     /**
@@ -56,7 +51,7 @@ class LoginRequest extends FormRequest
         $errors = [];
 
         // 1. Check Math Captcha
-        if (!app()->environment('local') && $this->captcha != session('math_captcha_result')) {
+        if ($this->captcha != session('math_captcha_result')) {
             $errors['captcha'] = 'The math verification answer is incorrect. Please try again.';
         }
 

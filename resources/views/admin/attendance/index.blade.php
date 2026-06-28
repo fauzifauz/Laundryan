@@ -71,7 +71,48 @@
     toastTitle: '{{ str_contains(session('success', ''), 'approved') ? 'Request Approved' : (str_contains(session('success', ''), 'rejected') ? 'Request Rejected' : 'Success') }}',
     toastType: '{{ str_contains(session('success', ''), 'rejected') ? 'warning' : 'success' }}',
     showDetail: false, showRejectForm: false, selectedRecord: null,
-    openDetail(r) { this.selectedRecord = r; this.showDetail = true; this.showRejectForm = false; },
+    openDetail(r) { this.selectedRecord = r; this.showDetail = true; this.showRejectForm = false; this.downloadingProof = false; },
+    showProofViewer: false,
+    proofViewerUrl: '',
+    proofViewerIsPdf: false,
+    proofViewerTitle: 'Supporting Proof',
+    downloadingProof: false,
+    isImagePath(path) { return path ? /\.(jpe?g|png|gif|webp)$/i.test(path) : false; },
+    isPdfPath(path) { return path ? /\.pdf$/i.test(path) : false; },
+    openProofViewer(url, isPdf, title = 'Supporting Proof') {
+        this.proofViewerUrl = url;
+        this.proofViewerIsPdf = isPdf;
+        this.proofViewerTitle = title;
+        this.showProofViewer = true;
+    },
+    async downloadProof(url, filename) {
+        if (this.downloadingProof) return;
+        this.downloadingProof = true;
+        const name = filename || url.split('/').pop() || 'document.pdf';
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Download failed');
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Download error:', error);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } finally {
+            this.downloadingProof = false;
+        }
+    },
     loading: false,
     ft(t) { return t ? t.substring(0,5) : '--:--'; },
     fd(d) { return d ? new Date(d).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}) : ''; },
@@ -755,29 +796,67 @@ x-init="loading = false"
                             <span class="block text-[8px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2 mb-3.5 flex items-center gap-1">
                                 <span class="material-symbols-outlined text-[12px] text-gray-400">description</span> Supporting Proof
                             </span>
-                            
+
+                            {{-- Check-in photo --}}
                             <template x-if="selectedRecord && selectedRecord.photo_path">
-                                <div class="rounded-2xl overflow-hidden border border-gray-150 shadow-inner bg-gray-50 aspect-video relative group">
-                                    <img :src="'/storage/'+selectedRecord.photo_path" class="w-full h-full object-cover">
-                                    <a :href="'/storage/'+selectedRecord.photo_path" target="_blank" class="absolute bottom-3 right-3 bg-black/60 hover:bg-black/80 text-white px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1 shadow-xs">
-                                        <span class="material-symbols-outlined text-[12px]">open_in_new</span> Expand
-                                    </a>
-                                </div>
-                            </template>
-                            
-                            <template x-if="selectedRecord && selectedRecord.document_path">
-                                <div class="border border-gray-155 rounded-2xl bg-gray-50/50 p-5 flex flex-col items-center text-center shadow-xs">
-                                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3">
-                                        <span class="material-symbols-outlined text-2xl">picture_as_pdf</span>
+                                <div class="space-y-3">
+                                    <div class="rounded-2xl overflow-hidden border border-gray-150 shadow-inner bg-gray-50">
+                                        <img :src="'/storage/'+selectedRecord.photo_path" class="w-full max-h-56 object-contain mx-auto" alt="Attendance photo">
                                     </div>
-                                    <span class="text-xs font-bold text-gray-800">Submitted Document Proof</span>
-                                    <a :href="'/storage/'+selectedRecord.document_path" target="_blank"
-                                       class="mt-4 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase flex items-center gap-1 shadow-md shadow-blue-100 transition-all">
-                                        <span class="material-symbols-outlined text-[14px]">download</span>Download Document
-                                    </a>
+                                    <button type="button"
+                                            @click="openProofViewer('/storage/'+selectedRecord.photo_path, false, 'Attendance Photo')"
+                                            class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 shadow-md shadow-blue-100 transition-all">
+                                        <span class="material-symbols-outlined text-[14px]">fullscreen</span> View Full
+                                    </button>
                                 </div>
                             </template>
-                            
+
+                            {{-- Leave / Permission document (image) --}}
+                            <template x-if="selectedRecord && selectedRecord.document_path && isImagePath(selectedRecord.document_path)">
+                                <div class="space-y-3">
+                                    <div class="rounded-2xl overflow-hidden border border-gray-150 shadow-inner bg-gray-50">
+                                        <img :src="'/storage/'+selectedRecord.document_path" class="w-full max-h-56 object-contain mx-auto" alt="Supporting proof">
+                                    </div>
+                                    <button type="button"
+                                            @click="openProofViewer('/storage/'+selectedRecord.document_path, false, 'Supporting Proof')"
+                                            class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 shadow-md shadow-blue-100 transition-all">
+                                        <span class="material-symbols-outlined text-[14px]">fullscreen</span> View Full
+                                    </button>
+                                </div>
+                            </template>
+
+                            {{-- Leave / Permission document (PDF) --}}
+                            <template x-if="selectedRecord && selectedRecord.document_path && isPdfPath(selectedRecord.document_path)">
+                                <div class="space-y-3">
+                                    <div class="rounded-2xl overflow-hidden border border-gray-150 shadow-inner bg-white">
+                                        <iframe :src="'/storage/'+selectedRecord.document_path" class="w-full h-52" title="PDF preview"></iframe>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button"
+                                                @click="openProofViewer('/storage/'+selectedRecord.document_path, true, 'Supporting Proof')"
+                                                class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 shadow-md shadow-blue-100 transition-all">
+                                            <span class="material-symbols-outlined text-[14px]">fullscreen</span> View Full
+                                        </button>
+                                        <button type="button"
+                                                @click="downloadProof('/storage/'+selectedRecord.document_path, selectedRecord.document_path.split('/').pop())"
+                                                :disabled="downloadingProof"
+                                                :class="downloadingProof ? 'opacity-70 pointer-events-none cursor-not-allowed' : 'hover:bg-gray-50'"
+                                                class="flex-1 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-[10px] font-black uppercase flex items-center justify-center gap-1.5 transition-all">
+                                            <template x-if="downloadingProof">
+                                                <svg class="animate-spin h-4 w-4 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </template>
+                                            <template x-if="!downloadingProof">
+                                                <span class="material-symbols-outlined text-[14px]">download</span>
+                                            </template>
+                                            <span x-text="downloadingProof ? 'Downloading...' : 'Download'"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
                             <template x-if="selectedRecord && !selectedRecord.photo_path && !selectedRecord.document_path">
                                 <div class="py-7 text-center text-gray-300 italic text-xs bg-gray-50 rounded-2xl border border-gray-150 shadow-inner">
                                     No proof uploaded.
@@ -818,6 +897,53 @@ x-init="loading = false"
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+{{-- Proof Viewer Modal --}}
+<div x-show="showProofViewer"
+     class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     style="display: none;"
+     x-cloak>
+
+    <div class="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col"
+         @click.away="showProofViewer = false"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+         x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+         x-transition:leave-end="opacity-0 scale-95 translate-y-4">
+
+        <div class="p-5 border-b border-gray-100 flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                <span class="material-symbols-outlined text-[20px]" x-text="proofViewerIsPdf ? 'picture_as_pdf' : 'photo_camera'"></span>
+            </div>
+            <div class="min-w-0">
+                <h3 class="text-sm font-black text-gray-900 truncate" x-text="proofViewerTitle"></h3>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider">In-page preview</p>
+            </div>
+            <button @click="showProofViewer = false" class="ml-auto text-gray-400 hover:text-gray-650 transition-colors p-1.5 rounded-lg hover:bg-gray-100 shrink-0">
+                <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+        </div>
+
+        <div class="p-5 overflow-auto flex-1 bg-gray-50/50">
+            <template x-if="proofViewerIsPdf">
+                <iframe :src="proofViewerUrl" class="w-full h-[70vh] rounded-2xl border border-gray-200 bg-white shadow-inner" title="PDF viewer"></iframe>
+            </template>
+            <template x-if="!proofViewerIsPdf">
+                <div class="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-inner flex items-center justify-center">
+                    <img :src="proofViewerUrl" class="w-full max-h-[75vh] object-contain" alt="Full preview">
+                </div>
+            </template>
         </div>
     </div>
 </div>

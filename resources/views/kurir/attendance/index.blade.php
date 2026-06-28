@@ -44,7 +44,8 @@
                                         Check In Now
                                     </button>
                                     <button @click="activeTab = 'request'" :class="activeTab === 'request' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400 hover:text-gray-600'"
-                                        class="w-1/2 pb-3.5 text-center border-b-2 font-black text-xs uppercase tracking-widest transition-all">
+                                        class="w-1/2 pb-3.5 text-center border-b-2 font-black text-xs uppercase tracking-widest transition-all {{ !$canSubmitLeaveRequest ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                        @if(!$canSubmitLeaveRequest) disabled @endif>
                                         Request Izin / Cuti
                                     </button>
                                 </div>
@@ -73,6 +74,7 @@
 
                                 <!-- Request Permit/Leave Tab -->
                                 <div x-show="activeTab === 'request'" class="space-y-6" style="display: none;">
+                                    @if($canSubmitLeaveRequest)
                                     <form action="{{ route('kurir.attendance.request') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
                                         @csrf
                                         <div>
@@ -102,6 +104,19 @@
                                             Submit Request
                                         </button>
                                     </form>
+                                    <p class="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                        Annual quota: {{ $leaveQuotaUsed }} / {{ $leaveQuotaMax }} used
+                                    </p>
+                                    @else
+                                    <div class="p-5 bg-amber-50 border border-amber-200 rounded-2xl text-center">
+                                        <p class="text-sm font-bold text-amber-800 leading-relaxed">
+                                            Your annual leave/permission quota has been fully used. You cannot submit another request this year.
+                                        </p>
+                                        <p class="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-2">
+                                            Quota: {{ $leaveQuotaUsed }} / {{ $leaveQuotaMax }}
+                                        </p>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         @elseif($attendance->status === 'permit' || $attendance->status === 'leave')

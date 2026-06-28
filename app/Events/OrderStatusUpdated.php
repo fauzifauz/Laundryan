@@ -16,12 +16,15 @@ class OrderStatusUpdated implements ShouldBroadcast
 
     public $order;
 
+    public ?array $pipelineCounts;
+
     /**
      * Create a new event instance.
      */
-    public function __construct(\App\Models\Order $order)
+    public function __construct(\App\Models\Order $order, ?array $pipelineCounts = null)
     {
         $this->order = $order;
+        $this->pipelineCounts = $pipelineCounts;
     }
 
     /**
@@ -33,6 +36,22 @@ class OrderStatusUpdated implements ShouldBroadcast
     {
         return [
             new PrivateChannel('order.' . $this->order->id),
+            new PrivateChannel('karyawan.orders'),
+        ];
+    }
+
+    public function broadcastAs(): string
+    {
+        return 'OrderStatusUpdated';
+    }
+
+    public function broadcastWith(): array
+    {
+        return [
+            'order_id' => $this->order->id,
+            'status' => $this->order->status,
+            'order_code' => $this->order->order_code,
+            'counts' => $this->pipelineCounts,
         ];
     }
 }

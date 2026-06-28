@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Payroll;
 use App\Models\User;
 use App\Models\Order;
+use App\Services\AttendancePayrollService;
 use Illuminate\Support\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -228,6 +229,20 @@ class PayrollController extends Controller
                     
                     // Cap maximum deduction at 50% of base salary to protect worker basic income
                     $potongan = min($potongan, $base * 0.5);
+
+                    $alphaInfo = AttendancePayrollService::calculateAlphaDeduction(
+                        $employee->id,
+                        (int) $month,
+                        (int) $year,
+                        (float) $base,
+                        (float) ($orderBonus + $attendanceBonus),
+                        (float) $potongan
+                    );
+
+                    $potongan += $alphaInfo['deduction'];
+                    $potongan = min($potongan, $base * 0.5);
+                } else {
+                    $alphaInfo = ['count' => 0, 'deduction' => 0];
                 }
 
                 $bonus = $orderBonus + $attendanceBonus;
@@ -237,6 +252,8 @@ class PayrollController extends Controller
                     'amount'   => $base,
                     'bonus'    => $bonus,
                     'potongan' => $potongan,
+                    'alpha_count' => $alphaInfo['count'] ?? 0,
+                    'alpha_deduction' => $alphaInfo['deduction'] ?? 0,
                     'month'    => $month,
                     'year'     => $year,
                     'status'   => 'pending'

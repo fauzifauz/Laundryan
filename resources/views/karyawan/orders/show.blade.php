@@ -150,7 +150,7 @@
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('admin.orders.index') }}"
+                    <a href="{{ route('karyawan.orders.index') }}"
                         class="text-gray-400 hover:text-gray-600 transition-colors">
                         <span class="material-symbols-outlined text-[24px]">arrow_back</span>
                     </a>
@@ -165,15 +165,6 @@
                 </div>
                 <p class="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Order Code:
                     #{{ $order->order_code }}</p>
-            </div>
-
-            <div class="flex items-center gap-2">
-                <a href="{{ route('admin.orders.edit', $order->id) }}"
-                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-amber-100 text-amber-600 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-amber-50 hover:shadow-md transition-all group shadow-sm">
-                    <span
-                        class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">edit</span>
-                    Edit Order
-                </a>
             </div>
         </div>
     </x-slot>
@@ -301,7 +292,7 @@
                                         $isFinished = in_array($order->status, ['completed', 'cancelled']);
                                         $pickupGpsUrl = $isFinished
                                             ? "https://www.google.com/maps/search/?api=1&query={$order->pickup_lat},{$order->pickup_lng}"
-                                            : route('admin.tracking.index') . "?focus_order={$order->id}&lat={$order->pickup_lat}&lng={$order->pickup_lng}&label=Pickup+Target+ORD-" . urlencode($order->order_code);
+                                            : route('karyawan.tracking.index') . "?focus_order={$order->id}&lat={$order->pickup_lat}&lng={$order->pickup_lng}&label=Pickup+Target+ORD-" . urlencode($order->order_code);
                                     @endphp
                                     <a href="{{ $pickupGpsUrl }}" target="_blank"
                                         class="inline-flex items-center gap-1 text-[9px] font-black text-blue-600 bg-white border border-blue-100 px-2 py-0.5 rounded-lg shadow-sm hover:bg-blue-50 transition-colors uppercase tracking-wider">
@@ -322,7 +313,7 @@
                                     @php
                                         $deliveryGpsUrl = $isFinished
                                             ? "https://www.google.com/maps/search/?api=1&query={$order->delivery_lat},{$order->delivery_lng}"
-                                            : route('admin.tracking.index') . "?focus_order={$order->id}&lat={$order->delivery_lat}&lng={$order->delivery_lng}&label=Delivery+Target+ORD-" . urlencode($order->order_code);
+                                            : route('karyawan.tracking.index') . "?focus_order={$order->id}&lat={$order->delivery_lat}&lng={$order->delivery_lng}&label=Delivery+Target+ORD-" . urlencode($order->order_code);
                                     @endphp
                                     <a href="{{ $deliveryGpsUrl }}" target="_blank"
                                         class="inline-flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-sm hover:bg-emerald-50 transition-colors uppercase tracking-wider">
@@ -673,46 +664,26 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('admin.orders.assign', $order->id) }}" method="POST"
-                            class="space-y-4 pt-2">
-                            @csrf
+                        <div class="space-y-4 pt-2">
                             <div>
                                 <label
                                     class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Pickup
                                     Courier</label>
-                                <div class="relative">
-                                    <select name="pickup_courier_id"
-                                        class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 pl-3 pr-8 text-[12px] font-semibold text-gray-800 appearance-none focus:border-blue-500 focus:ring-0 transition-all">
-                                        <option value="">Unassigned</option>
-                                        @foreach($couriers as $c)
-                                            <option value="{{ $c->id }}" {{ $order->pickup_courier_id == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <span
-                                        class="material-symbols-outlined absolute right-2.5 top-2.5 text-gray-400 text-[16px] pointer-events-none">expand_more</span>
+                                <div
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 px-3 text-[12px] font-semibold text-gray-800">
+                                    {{ $order->pickupCourier?->name ?? 'Unassigned' }}
                                 </div>
                             </div>
                             <div>
                                 <label
                                     class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Delivery
                                     Courier</label>
-                                <div class="relative">
-                                    <select name="delivery_courier_id"
-                                        class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 pl-3 pr-8 text-[12px] font-semibold text-gray-800 appearance-none focus:border-blue-500 focus:ring-0 transition-all">
-                                        <option value="">Unassigned</option>
-                                        @foreach($couriers as $c)
-                                            <option value="{{ $c->id }}" {{ $order->delivery_courier_id == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <span
-                                        class="material-symbols-outlined absolute right-2.5 top-2.5 text-gray-400 text-[16px] pointer-events-none">expand_more</span>
+                                <div
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 px-3 text-[12px] font-semibold text-gray-800">
+                                    {{ $order->deliveryCourier?->name ?? 'Unassigned' }}
                                 </div>
                             </div>
-                            <button type="submit"
-                                class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100">
-                                Save Assignments
-                            </button>
-                        </form>
+                        </div>
 
                         <div class="space-y-3 pt-2">
                             @foreach([['label' => 'Pickup Courier', 'model' => $order->pickupCourier, 'color' => 'blue'], ['label' => 'Delivery Courier', 'model' => $order->deliveryCourier, 'color' => 'emerald']] as $item)
@@ -760,12 +731,26 @@
                             </div>
                         </div>
 
-                        <form action="{{ route('admin.orders.status', $order->id) }}" method="POST" class="space-y-4">
+                        @php
+                            $employeeAllowedStatuses = [
+                                'arrived_at_laundry' => 'Arrived at Laundry',
+                                'washing' => 'Washing',
+                                'drying_ironing' => 'Drying & Ironing',
+                                'packing' => 'Packing',
+                                'ready_for_delivery' => 'Ready for Delivery',
+                            ];
+                        @endphp
+                        <form action="{{ route('karyawan.orders.status', $order->id) }}" method="POST" class="space-y-4" data-karyawan-status-form>
                             @csrf
                             <div class="relative">
                                 <select name="status"
                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2.5 pl-3 pr-8 text-[12px] font-semibold text-gray-800 appearance-none focus:border-blue-500 focus:ring-0 transition-all">
-                                    @foreach(['pending_payment' => 'Pending Payment', 'waiting_pickup' => 'Waiting Pickup', 'picking_up' => 'Picking Up', 'picked_up' => 'Picked Up', 'in_transit_to_laundry' => 'In Transit', 'arrived_at_laundry' => 'Arrived at Laundry', 'washing' => 'Washing', 'drying_ironing' => 'Drying & Ironing', 'packing' => 'Packing', 'ready_for_delivery' => 'Ready for Delivery', 'delivering' => 'Delivering', 'completed' => 'Completed', 'cancelled' => 'Cancelled'] as $v => $l)
+                                    @if(!array_key_exists($order->status, $employeeAllowedStatuses))
+                                        <option value="{{ $order->status }}" selected disabled>
+                                            {{ str_replace('_', ' ', ucfirst($order->status)) }} (current)
+                                        </option>
+                                    @endif
+                                    @foreach($employeeAllowedStatuses as $v => $l)
                                         <option value="{{ $v }}" {{ $order->status === $v ? 'selected' : '' }}>{{ $l }}
                                         </option>
                                     @endforeach
@@ -840,5 +825,6 @@
             }
         }
     </script>
+    @include('karyawan.partials.order-status-sync')
 </div>
 </x-app-layout>
