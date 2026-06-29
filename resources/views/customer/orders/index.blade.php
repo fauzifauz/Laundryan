@@ -1,100 +1,175 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('My Orders') }}
-            </h2>
-            <a href="{{ route('customer.orders.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition-all transform hover:scale-105">
-                + New Order
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h2 class="font-extrabold text-2xl text-gray-900 tracking-tight">
+                    {{ __('Laundry Order History') }}
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">Manage and track all your laundry transactions.</p>
+            </div>
+            <a href="{{ route('customer.orders.create') }}" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-2xl shadow-[0_10px_20px_rgba(0,91,192,0.15)] transition-all">
+                <span class="material-symbols-outlined text-[20px]">add</span>
+                New Order
             </a>
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl border border-gray-100">
-                <div class="p-8">
-                    @if(session('success'))
-                        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">
-                            {{ session('success') }}
-                        </div>
-                    @endif
-
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead>
-                                <tr class="text-left text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    <th class="px-6 py-4">Order Code</th>
-                                    <th class="px-6 py-4">Service</th>
-                                    <th class="px-6 py-4">Pickup Time</th>
-                                    <th class="px-6 py-4">Total</th>
-                                    <th class="px-6 py-4">Status</th>
-                                    <th class="px-6 py-4">Payment</th>
-                                    <th class="px-6 py-4">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100 text-sm">
-                                @forelse ($orders as $order)
-                                    <tr class="hover:bg-gray-50 transition-colors">
-                                        <td class="px-6 py-4 font-bold text-blue-600">{{ $order->order_code }}</td>
-                                        <td class="px-6 py-4">
-                                            <div class="font-medium text-gray-900">{{ $order->service->name }}</div>
-                                            <div class="text-gray-500">{{ $order->itemType->name }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 text-gray-600">{{ $order->pickup_time->format('d M Y, H:i') }}</td>
-                                        <td class="px-6 py-4 font-semibold text-gray-900">Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                                        <td class="px-6 py-4">
-                                            @php
-                                                $statusColors = [
-                                                    'pending_payment' => 'bg-gray-100 text-gray-800',
-                                                    'waiting_pickup' => 'bg-blue-100 text-blue-800',
-                                                    'picking_up' => 'bg-blue-100 text-blue-800',
-                                                    'picked_up' => 'bg-blue-100 text-blue-800',
-                                                    'in_transit_to_laundry' => 'bg-yellow-100 text-yellow-800',
-                                                    'arrived_at_laundry' => 'bg-orange-100 text-orange-800',
-                                                    'washing' => 'bg-cyan-100 text-cyan-800',
-                                                    'drying_ironing' => 'bg-teal-100 text-teal-800',
-                                                    'packing' => 'bg-emerald-100 text-emerald-800',
-                                                    'ready_for_delivery' => 'bg-lime-100 text-lime-800',
-                                                    'delivering' => 'bg-sky-100 text-sky-800',
-                                                    'completed' => 'bg-green-100 text-green-800',
-                                                ];
-                                                $color = $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800';
-                                            @endphp
-                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full {{ $color }}">
-                                                {{ str_replace('_', ' ', ucfirst($order->status)) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            @if($order->payment_status === 'paid')
-                                                <span class="text-green-600 font-bold flex items-center">
-                                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                                                    Paid
-                                                </span>
-                                            @else
-                                                <span class="text-gray-500 font-medium italic">Pending</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <a href="{{ route('customer.orders.show', $order->id) }}" class="text-blue-600 hover:text-blue-900 font-bold transition-all underline decoration-dotted">Details</a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                                            <div class="flex flex-col items-center">
-                                                <svg class="w-16 h-16 text-gray-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                                <p class="text-lg font-medium">No orders found yet.</p>
-                                                <a href="{{ route('customer.orders.create') }}" class="mt-4 text-blue-600 hover:underline">Place your first order</a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+    <div class="py-2 space-y-6">
+        <!-- Interactive Top Filters -->
+        <form method="GET" action="{{ route('customer.orders.index') }}" class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Status Filter Links/Radio -->
+            <div>
+                <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-3">Filter Status</span>
+                <div class="flex flex-wrap gap-2">
+                    @foreach([
+                        'all' => 'All',
+                        'proses_pencucian' => 'Washing Process',
+                        'setrika' => 'Ironing',
+                        'packing' => 'Packing',
+                        'selesai' => 'Completed'
+                    ] as $key => $label)
+                        <button type="submit" name="status" value="{{ $key }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border
+                            {{ request('status', 'all') === $key 
+                                ? 'bg-brand border-brand text-white shadow-sm' 
+                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                            {{ $label }}
+                        </button>
+                    @endforeach
                 </div>
             </div>
+
+            <!-- Period Filter Links/Radio -->
+            <div>
+                <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-3">Filter Period</span>
+                <div class="flex flex-wrap gap-2">
+                    @foreach([
+                        'all' => 'All Time',
+                        'harian' => 'Today',
+                        'mingguan' => 'This Week',
+                        'bulanan' => 'This Month',
+                        'tahunan' => 'This Year'
+                    ] as $key => $label)
+                        <button type="submit" name="period" value="{{ $key }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border
+                            {{ request('period', 'all') === $key 
+                                ? 'bg-brand border-brand text-white shadow-sm' 
+                                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                            {{ $label }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
+            
+            <!-- Hidden inputs to preserve the other filter when clicking one -->
+            @if(request()->has('period') && !request()->has('status'))
+                <input type="hidden" name="period" value="{{ request('period') }}">
+            @endif
+            @if(request()->has('status') && !request()->has('period'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
+            @endif
+        </form>
+
+        <!-- Orders Grid Listing -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @forelse ($orders as $order)
+                <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-300 flex flex-col justify-between space-y-6">
+                    <!-- Top header of the card -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Order Code</span>
+                            <h4 class="text-sm font-black text-brand tracking-tight mt-0.5">{{ $order->order_code }}</h4>
+                            <p class="text-[10px] text-gray-500 font-medium mt-1">
+                                {{ $order->created_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+                            </p>
+                        </div>
+                        
+                        <!-- Badges -->
+                        <div class="flex flex-col items-end gap-1.5">
+                            @php
+                                $statusMapping = [
+                                    'pending_payment' => ['label' => 'Awaiting Payment', 'color' => 'bg-gray-100 text-gray-800 border-gray-200'],
+                                    'waiting_pickup' => ['label' => 'Awaiting Courier', 'color' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                                    'picking_up' => ['label' => 'Courier Picking Up', 'color' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                                    'picked_up' => ['label' => 'Picked Up', 'color' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                                    'in_transit_to_laundry' => ['label' => 'Transit to Laundry', 'color' => 'bg-yellow-50 text-yellow-700 border-yellow-200'],
+                                    'arrived_at_laundry' => ['label' => 'Arrived at Laundry', 'color' => 'bg-orange-50 text-orange-700 border-orange-200'],
+                                    'washing' => ['label' => 'Washing', 'color' => 'bg-cyan-50 text-cyan-700 border-cyan-200'],
+                                    'drying_ironing' => ['label' => 'Drying & Ironing', 'color' => 'bg-teal-50 text-teal-700 border-teal-200'],
+                                    'packing' => ['label' => 'Packing Clothes', 'color' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                                    'ready_for_delivery' => ['label' => 'Ready for Delivery', 'color' => 'bg-lime-50 text-lime-700 border-lime-200'],
+                                    'delivering' => ['label' => 'Out for Delivery', 'color' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                                    'completed' => ['label' => 'Completed', 'color' => 'bg-green-50 text-green-700 border-green-200'],
+                                ];
+                                $mapped = $statusMapping[$order->status] ?? ['label' => ucfirst($order->status), 'color' => 'bg-gray-100 text-gray-700 border-gray-200'];
+                            @endphp
+                            <span class="px-2.5 py-0.5 text-[10px] font-black rounded-full border {{ $mapped['color'] }}">
+                                {{ $mapped['label'] }}
+                            </span>
+                            
+                            @if($order->payment_status === 'paid')
+                                <span class="px-2.5 py-0.5 text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                                    PAID
+                                </span>
+                            @else
+                                <span class="px-2.5 py-0.5 text-[10px] font-black bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-full">
+                                    UNPAID
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Middle: Service detail -->
+                    <div class="grid grid-cols-2 gap-4 py-3 border-y border-gray-50 text-left">
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Service</span>
+                            <p class="text-xs font-extrabold text-gray-800 mt-0.5">{{ $order->service->name }}</p>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Item Category</span>
+                            <p class="text-xs font-extrabold text-gray-800 mt-0.5">{{ $order->itemType->name }}</p>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Soap / Fragrance</span>
+                            <p class="text-xs font-medium text-gray-600 mt-0.5">{{ $order->soap ?? '-' }} / {{ $order->fragrance ?? '-' }}</p>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Total Price</span>
+                            <p class="text-xs font-black text-brand mt-0.5">Rp {{ number_format($order->total_price, 0, ',', '.') }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Bottom: Actions -->
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="text-left">
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider font-jakarta">Pickup Scheduled</span>
+                            <p class="text-xs font-semibold text-gray-700 mt-0.5">
+                                {{ $order->pickup_time->format('d M Y, H:i') }}
+                            </p>
+                        </div>
+
+                        <div class="flex gap-2">
+                            @if($order->payment_status !== 'paid' && $order->payment_method === 'bank_transfer')
+                                <a href="{{ route('customer.orders.show', $order->id) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-black px-4 py-2 rounded-xl transition-colors shadow-sm">
+                                    Upload Receipt
+                                </a>
+                            @endif
+                            <a href="{{ route('customer.orders.show', $order->id) }}" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-black px-4 py-2 rounded-xl transition-colors">
+                                Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="col-span-full bg-white rounded-3xl p-12 shadow-sm border border-gray-100 text-center flex flex-col items-center">
+                    <div class="w-16 h-16 rounded-full bg-gray-50 text-gray-400 flex items-center justify-center mb-4">
+                        <span class="material-symbols-outlined text-4xl">receipt_long</span>
+                    </div>
+                    <h4 class="text-lg font-bold text-gray-900">No Transactions Yet</h4>
+                    <p class="text-sm text-gray-500 mt-1 max-w-sm">You haven't placed any laundry orders yet, or no matches found for the filters.</p>
+                    <a href="{{ route('customer.orders.create') }}" class="mt-6 inline-flex items-center gap-2 bg-brand hover:bg-blue-700 text-white text-xs font-black px-6 py-3 rounded-xl shadow transition-all">
+                        Book Your First Order
+                    </a>
+                </div>
+            @endforelse
         </div>
     </div>
 </x-app-layout>

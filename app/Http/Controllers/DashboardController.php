@@ -27,6 +27,27 @@ class DashboardController extends Controller
         }
 
         // Default for pelanggan (customer)
-        return view('dashboard');
+        $user = auth()->user();
+        $orders = $user->customerOrders();
+        
+        $activeOrdersCount = (clone $orders)->whereNotIn('status', ['completed', 'cancelled'])->count();
+        $completedOrdersCount = (clone $orders)->where('status', 'completed')->count();
+        $totalSpending = (clone $orders)->where('payment_status', 'paid')->sum('total_price');
+        
+        $latestOrder = (clone $orders)->latest()->with(['service', 'itemType', 'courier'])->first();
+        
+        // Fetch courier history
+        $pickupCouriers = (clone $orders)->whereNotNull('pickup_courier_id')->with('pickupCourier')->get()->pluck('pickupCourier');
+        $deliveryCouriers = (clone $orders)->whereNotNull('delivery_courier_id')->with('deliveryCourier')->get()->pluck('deliveryCourier');
+        $assignedCouriers = (clone $orders)->whereNotNull('courier_id')->with('courier')->get()->pluck('courier');
+        $couriers = $pickupCouriers->concat($deliveryCouriers)->concat($assignedCouriers)->unique('id')->filter()->take(5);
+
+        return view('dashboard', compact(
+            'activeOrdersCount',
+            'completedOrdersCount',
+            'totalSpending',
+            'latestOrder',
+            'couriers'
+        ));
     }
 }
