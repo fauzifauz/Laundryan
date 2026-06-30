@@ -685,7 +685,32 @@
         new Chart(document.getElementById('ordersChart').getContext('2d'), {
             type:'bar',
             data:{ labels:chartData.labels, datasets:[{ label:'Incoming Orders', data:chartData.data, backgroundColor:'#005bc0', borderRadius:6, barPercentage:0.6 }] },
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111827', titleFont:{family:"'Plus Jakarta Sans',sans-serif",size:13}, bodyFont:{family:"'Plus Jakarta Sans',sans-serif",size:14,weight:'bold'}, padding:12, cornerRadius:8, displayColors:false } }, scales:{ y:{ beginAtZero:true, ticks:{precision:0,font:{family:"'Plus Jakarta Sans',sans-serif",size:11}}, grid:{color:'#F3F4F6'} }, x:{ ticks:{font:{family:"'Plus Jakarta Sans',sans-serif",size:11,weight:'bold'}}, grid:{display:false} } } }
+            options:{ 
+                responsive:true, 
+                maintainAspectRatio:false, 
+                onClick: function(e, activeEls) {
+                    if (activeEls.length > 0) {
+                        const idx = activeEls[0].index;
+                        const dateValue = chartData.full_dates[idx];
+                        let url = "{{ route('karyawan.orders.index') }}";
+                        
+                        if (chartData.filter_type === 'weekly') {
+                            const dates = dateValue.split('|');
+                            url += "?start_date=" + dates[0] + "&end_date=" + dates[1];
+                        } else if (chartData.filter_type === 'monthly') {
+                            const parts = dateValue.split('-');
+                            url += "?year=" + parts[0] + "&month=" + parts[1];
+                        } else if (chartData.filter_type === 'yearly') {
+                            url += "?year=" + dateValue + "&month=all";
+                        } else {
+                            url += "?date=" + dateValue;
+                        }
+                        
+                        window.location.href = url;
+                    }
+                },
+                plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111827', titleFont:{family:"'Plus Jakarta Sans',sans-serif",size:13}, bodyFont:{family:"'Plus Jakarta Sans',sans-serif",size:14,weight:'bold'}, padding:12, cornerRadius:8, displayColors:false } }, scales:{ y:{ beginAtZero:true, ticks:{precision:0,font:{family:"'Plus Jakarta Sans',sans-serif",size:11}}, grid:{color:'#F3F4F6'} }, x:{ ticks:{font:{family:"'Plus Jakarta Sans',sans-serif",size:11,weight:'bold'}}, grid:{display:false} } } 
+            }
         });
 
         // Service Pie
@@ -693,7 +718,19 @@
         new Chart(document.getElementById('servicePieChart'), {
             type:'doughnut',
             data:{ labels:serviceData.map(d=>d.label), datasets:[{ data:serviceData.map(d=>d.count), backgroundColor:['#005bc0','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899'], borderWidth:0, hoverOffset:15 }] },
-            options:{ responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111827', titleFont:{family:"'Plus Jakarta Sans',sans-serif",size:12}, bodyFont:{family:"'Plus Jakarta Sans',sans-serif",size:13,weight:'bold'}, padding:12, cornerRadius:8 } } }
+            options:{ 
+                responsive:true, 
+                maintainAspectRatio:false, 
+                cutout:'70%', 
+                onClick: function(e, activeEls) {
+                    if(activeEls.length > 0) {
+                        const idx = activeEls[0].index;
+                        const serviceId = serviceData[idx].service_id;
+                        window.location.href = "{{ route('karyawan.orders.index') }}?service_id=" + serviceId;
+                    }
+                },
+                plugins:{ legend:{display:false}, tooltip:{ backgroundColor:'#111827', titleFont:{family:"'Plus Jakarta Sans',sans-serif",size:12}, bodyFont:{family:"'Plus Jakarta Sans',sans-serif",size:13,weight:'bold'}, padding:12, cornerRadius:8 } } 
+            }
         });
 
         // Mini Map with admin-identical markers
