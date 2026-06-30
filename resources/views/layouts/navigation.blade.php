@@ -208,11 +208,11 @@
                 @endif
 
                 @if(Auth::user()->role === 'pelanggan')
-                    <x-sidebar-link :href="route('customer.orders.index')" :active="request()->routeIs('customer.orders.*')"
+                    <x-sidebar-link id="tour-sidebar-my-laundry" :href="route('customer.orders.index')" :active="request()->routeIs('customer.orders.*')"
                         icon="shopping_bag">
                         My Laundry
                     </x-sidebar-link>
-                    <x-sidebar-link :href="route('customer.payments.index')" :active="request()->routeIs('customer.payments.*')"
+                    <x-sidebar-link id="tour-sidebar-payments" :href="route('customer.payments.index')" :active="request()->routeIs('customer.payments.*')"
                         icon="payments">
                         Payments
                     </x-sidebar-link>

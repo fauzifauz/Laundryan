@@ -18,41 +18,62 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = auth()->user()->customerOrders()->latest();
+        $customerId = auth()->id();
+        
+        $stats = [
+            'total_count' => Order::where('customer_id', $customerId)->count(),
+            'today_count' => Order::where('customer_id', $customerId)->whereDate('created_at', Carbon::today())->count(),
+            'unassigned_count' => Order::where('customer_id', $customerId)->where(function ($q) {
+                $q->whereNull('pickup_courier_id')
+                    ->orWhereNull('delivery_courier_id');
+            })->whereNotIn('status', ['completed', 'cancelled'])->count(),
+            'active_processing_count' => Order::where('customer_id', $customerId)->whereNotIn('status', ['completed', 'cancelled', 'pending_payment'])->count(),
+            'arrived_at_laundry_count' => Order::where('customer_id', $customerId)->where('status', 'arrived_at_laundry')->count(),
+            'ready_delivery_count' => Order::where('customer_id', $customerId)->where('status', 'ready_for_delivery')->count(),
+            'delivering_count' => Order::where('customer_id', $customerId)->where('status', 'delivering')->count(),
+            'completed_count' => Order::where('customer_id', $customerId)->where('status', 'completed')->count(),
+        ];
 
-        // Filter based on status
-        if ($request->filled('status') && $request->status !== 'all') {
-            $status = $request->status;
-            if ($status === 'proses_pencucian' || $status === 'active') {
-                $query->whereNotIn('status', ['completed', 'cancelled']);
-            } elseif ($status === 'setrika') {
-                $query->where('status', 'drying_ironing');
-            } elseif ($status === 'packing') {
-                $query->where('status', 'packing');
-            } elseif ($status === 'selesai' || $status === 'completed') {
-                $query->where('status', 'completed');
+        $query = Order::where('customer_id', $customerId)
+            ->with(['service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'review'])
+            ->latest();
+
+        // Search query
+        if ($request->filled('search')) {
+            $search = trim($request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('order_code', 'like', "%{$search}%")
+                  ->orWhere('pickup_address', 'like', "%{$search}%")
+                  ->orWhere('delivery_address', 'like', "%{$search}%");
+            });
+        }
+
+        // Status filter
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $statusFilter = $request->input('status');
+            if ($statusFilter === 'active_processing') {
+                $query->whereNotIn('status', ['completed', 'cancelled', 'pending_payment']);
             } else {
-                $query->where('status', $status);
+                $query->where('status', $statusFilter);
             }
         }
 
-        // Filter based on period
-        if ($request->filled('period') && $request->period !== 'all') {
-            $period = $request->period;
-            if ($period === 'harian') {
-                $query->whereDate('created_at', Carbon::today());
-            } elseif ($period === 'mingguan') {
-                $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-            } elseif ($period === 'bulanan') {
-                $query->whereMonth('created_at', Carbon::now()->month)
-                      ->whereYear('created_at', Carbon::now()->year);
-            } elseif ($period === 'tahunan') {
-                $query->whereYear('created_at', Carbon::now()->year);
-            }
+        // Courier assignment filter
+        if ($request->input('courier_assigned') === 'unassigned') {
+            $query->where(function ($q) {
+                $q->whereNull('pickup_courier_id')
+                    ->orWhereNull('delivery_courier_id');
+            })->whereNotIn('status', ['completed', 'cancelled']);
         }
 
-        $orders = $query->get();
-        return view('customer.orders.index', compact('orders'));
+        // Filter period
+        if ($request->input('filter_period') === 'today') {
+            $query->whereDate('created_at', Carbon::today());
+        }
+
+        $orders = $query->paginate(10)->withQueryString();
+
+        return view('customer.orders.index', compact('orders', 'stats'));
     }
 
     public function create()
@@ -105,8 +126,12 @@ class OrderController extends Controller
         }
         $consolidatedNotes = implode("\n", $notesArray);
 
+        $serviceInitials = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $service->name), 0, 2));
+        $itemInitials = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $itemType->name), 0, 2));
+        $orderCode = 'ORD-' . $serviceInitials . '-' . $itemInitials . '-' . strtoupper(Str::random(6));
+
         $order = Order::create([
-            'order_code' => 'ORD-' . strtoupper(Str::random(10)),
+            'order_code' => $orderCode,
             'customer_id' => auth()->id(),
             'service_id' => $service->id,
             'item_type_id' => $itemType->id,
@@ -248,7 +273,7 @@ class OrderController extends Controller
             abort(403);
         }
         
-        $order->load(['service', 'itemType', 'courier', 'photos', 'messages.sender', 'review']);
+        $order->load(['service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'messages.sender', 'review', 'latestPayment', 'payments']);
         
         $latestLocation = \App\Models\Location::where('order_id', $order->id)
             ->latest()
@@ -408,5 +433,80 @@ class OrderController extends Controller
             'delivery_lat' => $deliveryCoords['lat'],
             'delivery_lng' => $deliveryCoords['lng'],
         ];
+    }
+
+    public function updateLocation(Request $request)
+    {
+        $request->validate([
+            'latitude'  => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'order_id'  => 'required|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($request->order_id);
+        if ($order->customer_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $location = \App\Models\Location::create([
+            'user_id'   => auth()->id(),
+            'order_id'  => $request->order_id,
+            'latitude'  => $request->latitude,
+            'longitude' => $request->longitude,
+        ]);
+
+        $location->load('user');
+
+        // Broadcast to order's private channel
+        broadcast(new \App\Events\LocationUpdated($location))->toOthers();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function locations(Order $order)
+    {
+        $user = auth()->user();
+        if ($user->role !== 'admin' && 
+            $user->role !== 'karyawan' && 
+            $order->customer_id !== $user->id && 
+            $order->courier_id !== $user->id && 
+            $order->pickup_courier_id !== $user->id && 
+            $order->delivery_courier_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $courierLatest = null;
+        $courierId = null;
+        $pickupStatuses = ['pending_payment', 'waiting_pickup', 'picking_up', 'picked_up', 'in_transit_to_laundry', 'arrived_at_laundry', 'penjemputan', 'dijemput', 'diantar', 'sampai'];
+        if (in_array($order->status, $pickupStatuses)) {
+            $courierId = $order->pickup_courier_id;
+        } else {
+            $courierId = $order->delivery_courier_id;
+        }
+
+        if ($courierId) {
+            $courierLatest = \App\Models\Location::where('user_id', $courierId)
+                ->where('order_id', $order->id)
+                ->latest()
+                ->first();
+        }
+
+        $customerLatest = \App\Models\Location::where('user_id', $order->customer_id)
+            ->where('order_id', $order->id)
+            ->latest()
+            ->first();
+
+        return response()->json([
+            'courier' => $courierLatest ? [
+                'latitude' => $courierLatest->latitude,
+                'longitude' => $courierLatest->longitude,
+                'updated_at' => $courierLatest->updated_at->diffForHumans()
+            ] : null,
+            'customer' => $customerLatest ? [
+                'latitude' => $customerLatest->latitude,
+                'longitude' => $customerLatest->longitude,
+                'updated_at' => $customerLatest->updated_at->diffForHumans()
+            ] : null,
+        ]);
     }
 }

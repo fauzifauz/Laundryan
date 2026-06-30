@@ -7,7 +7,7 @@
                 </h2>
                 <p class="text-xs text-gray-500 mt-1">Welcome back! Monitor your laundry activities easily.</p>
             </div>
-            <a href="{{ route('customer.orders.create') }}" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-2xl shadow-[0_10px_20px_rgba(0,91,192,0.15)] hover:shadow-[0_10px_20px_rgba(0,91,192,0.3)] transition-all duration-300 transform hover:-translate-y-0.5">
+            <a id="tour-book-btn" href="{{ route('customer.orders.create') }}" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-2xl shadow-[0_10px_20px_rgba(0,91,192,0.15)] hover:shadow-[0_10px_20px_rgba(0,91,192,0.3)] transition-all duration-300 transform hover:-translate-y-0.5">
                 <span class="material-symbols-outlined text-[20px]">local_laundry_service</span>
                 Book Laundry Now
             </a>
@@ -18,7 +18,7 @@
         <!-- Welcoming Hero & Stats Overview Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Glassmorphic Promo Card -->
-            <div class="lg:col-span-2 bg-gradient-to-br from-brand via-blue-600 to-blue-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px] group">
+            <div id="tour-welcome-card" class="lg:col-span-2 bg-gradient-to-br from-brand via-blue-600 to-blue-800 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[220px] group">
                 <div class="absolute -right-10 -top-10 w-44 h-44 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700"></div>
                 <div class="absolute -left-10 -bottom-10 w-44 h-44 bg-blue-400/20 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700"></div>
                 
@@ -42,7 +42,7 @@
             <!-- Stats Overview (Spending & Count) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
                 <!-- Stat Card 1 (Total Spending) -->
-                <a href="{{ route('customer.payments.index', ['status' => 'success']) }}" class="block bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                <a id="tour-spending-card" href="{{ route('customer.payments.index', ['status' => 'success']) }}" class="block bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Spending</p>
                         <h4 class="text-2xl font-black text-gray-900 mt-1">Rp {{ number_format($totalSpending, 0, ',', '.') }}</h4>
@@ -54,7 +54,7 @@
                 </a>
 
                 <!-- Stat Card 2 (Order Activity) -->
-                <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all duration-300">
+                <div id="tour-activity-card" class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all duration-300">
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">Order Activity</p>
                         <div class="flex items-center gap-3">
@@ -81,7 +81,7 @@
         </div>
 
         <!-- Active Order Tracking Timeline Section -->
-        <div class="bg-white rounded-3xl p-8 shadow-md border border-gray-100 space-y-8">
+        <div id="tour-active-orders" class="bg-white rounded-3xl p-8 shadow-md border border-gray-100 space-y-8">
             <div class="flex justify-between items-center pb-2 border-b border-gray-50">
                 <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <span class="material-symbols-outlined text-brand">track_changes</span>
@@ -236,7 +236,7 @@
         </div>
 
         <!-- Assigned Courier History -->
-        <div class="bg-white rounded-3xl p-8 shadow-md border border-gray-100">
+        <div id="tour-courier-history" class="bg-white rounded-3xl p-8 shadow-md border border-gray-100">
             <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2 mb-6">
                 <span class="material-symbols-outlined text-brand">contacts</span>
                 Assigned Courier History
@@ -373,6 +373,20 @@
         .animate-fade-in {
             animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        /* Tour active highlights */
+        .tour-highlight-active {
+            position: relative !important;
+            z-index: 99999 !important;
+            pointer-events: none !important;
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        #tour-tooltip {
+            animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 
     <script>
@@ -507,5 +521,308 @@
                 closeCourierModal();
             }
         }
+
+        // Onboarding Tour logic
+        const tourSteps = [
+            {
+                element: '#tour-welcome-card',
+                title: 'Welcome to Your Dashboard!',
+                description: 'Here you can see a quick summary of premium services and easily check out what is new.',
+                position: 'bottom'
+            },
+            {
+                element: '#tour-book-btn',
+                title: 'Book a Laundry Service',
+                description: 'Ready to clean your clothes? Click this button to place a new order, choose scents, soaps, and assign couriers.',
+                position: 'bottom'
+            },
+            {
+                element: '#tour-spending-card',
+                title: 'Track Your Spending',
+                description: 'Keep tabs on your successful transactions and total spending details in real-time.',
+                position: 'left'
+            },
+            {
+                element: '#tour-activity-card',
+                title: 'Order Activity Stats',
+                description: 'Quickly see how many orders are active and how many are already completed.',
+                position: 'left'
+            },
+            {
+                element: '#tour-sidebar-my-laundry',
+                title: 'My Laundry Menu',
+                description: 'Click here to view your laundry order history, track ongoing orders, and view order receipts.',
+                position: 'right'
+            },
+            {
+                element: '#tour-sidebar-payments',
+                title: 'Payments History Menu',
+                description: 'Click here to access your full list of transactions, check invoice documents, and filter logs.',
+                position: 'right'
+            }
+        ];
+
+        let currentTourStep = 0;
+        let tourDirection = 'next';
+
+        function preventDefault(e) {
+            e.preventDefault();
+        }
+
+        const keysToBlock = {
+            'ArrowUp': 1, 'ArrowDown': 1, 'Space': 1, ' ': 1, 'PageUp': 1, 'PageDown': 1, 'End': 1, 'Home': 1
+        };
+
+        function preventDefaultForScrollKeys(e) {
+            if (keysToBlock[e.key]) {
+                e.preventDefault();
+                return false;
+            }
+        }
+
+        function disableScroll() {
+            window.addEventListener('DOMMouseScroll', preventDefault, { passive: false });
+            window.addEventListener('wheel', preventDefault, { passive: false });
+            window.addEventListener('touchmove', preventDefault, { passive: false });
+            window.addEventListener('keydown', preventDefaultForScrollKeys, { passive: false });
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function enableScroll() {
+            window.removeEventListener('DOMMouseScroll', preventDefault, { passive: false });
+            window.removeEventListener('wheel', preventDefault, { passive: false });
+            window.removeEventListener('touchmove', preventDefault, { passive: false });
+            window.removeEventListener('keydown', preventDefaultForScrollKeys, { passive: false });
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+        }
+
+        function startOnboardingTour() {
+            currentTourStep = 0;
+            tourDirection = 'next';
+            const spotlight = document.getElementById('tour-spotlight');
+            const tooltip = document.getElementById('tour-tooltip');
+            const backdrop = document.getElementById('tour-backdrop');
+            
+            backdrop.classList.remove('hidden');
+            spotlight.classList.remove('hidden');
+            tooltip.classList.remove('hidden');
+            disableScroll();
+            
+            showTourStep();
+        }
+
+        function showTourStep() {
+            if (currentTourStep >= tourSteps.length) {
+                finishOnboardingTour();
+                return;
+            }
+            if (currentTourStep < 0) {
+                currentTourStep = 0;
+            }
+
+            const step = tourSteps[currentTourStep];
+            const el = document.querySelector(step.element);
+            
+            if (!el) {
+                // If element is not present on page (e.g. no active orders card exists), skip step
+                if (tourDirection === 'prev') {
+                    currentTourStep--;
+                    showTourStep();
+                } else {
+                    currentTourStep++;
+                    showTourStep();
+                }
+                return;
+            }
+            
+            // Scroll to element gently
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Wait slightly for scroll to finish before positioning spotlight & tooltip
+            setTimeout(() => {
+                const rect = el.getBoundingClientRect();
+                const spotlight = document.getElementById('tour-spotlight');
+                const tooltip = document.getElementById('tour-tooltip');
+                
+                // Position spotlight around element
+                const pad = 10;
+                spotlight.style.top = `${rect.top - pad}px`;
+                spotlight.style.left = `${rect.left - pad}px`;
+                spotlight.style.width = `${rect.width + (pad * 2)}px`;
+                spotlight.style.height = `${rect.height + (pad * 2)}px`;
+                
+                // Update tooltip content
+                document.getElementById('tour-step-progress').textContent = `Step ${currentTourStep + 1} of ${tourSteps.length}`;
+                document.getElementById('tour-step-title').textContent = step.title;
+                document.getElementById('tour-step-desc').textContent = step.description;
+                
+                // Manage Buttons
+                document.getElementById('tour-prev-btn').disabled = currentTourStep === 0;
+                const nextBtn = document.getElementById('tour-next-btn');
+                if (currentTourStep === tourSteps.length - 1) {
+                    nextBtn.textContent = 'Finish';
+                } else {
+                    nextBtn.textContent = 'Next';
+                }
+                
+                // Position Tooltip relative to spotlight
+                const toolWidth = tooltip.offsetWidth || 340;
+                const toolHeight = tooltip.offsetHeight || 180;
+                let top = 0;
+                let left = 0;
+                
+                const sTop = rect.top - pad;
+                const sLeft = rect.left - pad;
+                const sWidth = rect.width + (pad * 2);
+                const sHeight = rect.height + (pad * 2);
+                
+                if (step.position === 'bottom') {
+                    top = sTop + sHeight + 15;
+                    left = sLeft + (sWidth / 2) - (toolWidth / 2);
+                } else if (step.position === 'top') {
+                    top = sTop - toolHeight - 15;
+                    left = sLeft + (sWidth / 2) - (toolWidth / 2);
+                } else if (step.position === 'left') {
+                    top = sTop + (sHeight / 2) - (toolHeight / 2);
+                    left = sLeft - toolWidth - 15;
+                } else if (step.position === 'right') {
+                    top = sTop + (sHeight / 2) - (toolHeight / 2);
+                    left = sLeft + sWidth + 15;
+                }
+                
+                // Boundaries check
+                if (left < 10) left = 10;
+                if (left + toolWidth > window.innerWidth) left = window.innerWidth - toolWidth - 10;
+                if (top < 10) top = 10;
+                if (top + toolHeight > window.innerHeight) top = window.innerHeight - toolHeight - 10;
+                
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+            }, 300);
+        }
+
+        function nextOnboardingStep() {
+            tourDirection = 'next';
+            if (currentTourStep < tourSteps.length - 1) {
+                currentTourStep++;
+                showTourStep();
+            } else {
+                finishOnboardingTour();
+            }
+        }
+
+        function prevOnboardingStep() {
+            tourDirection = 'prev';
+            if (currentTourStep > 0) {
+                currentTourStep--;
+                showTourStep();
+            }
+        }
+
+        function skipOnboardingTour() {
+            finishOnboardingTour();
+        }
+
+        function finishOnboardingTour() {
+            document.getElementById('tour-spotlight').classList.add('hidden');
+            document.getElementById('tour-tooltip').classList.add('hidden');
+            document.getElementById('tour-backdrop').classList.add('hidden');
+            enableScroll();
+            sessionStorage.setItem('onboarding_tour_played', 'true');
+        }
+
+        function updateTourLayout() {
+            const spotlight = document.getElementById('tour-spotlight');
+            if (spotlight && !spotlight.classList.contains('hidden')) {
+                window.requestAnimationFrame(() => {
+                    const step = tourSteps[currentTourStep];
+                    const el = document.querySelector(step.element);
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        const pad = 10;
+                        spotlight.style.top = `${rect.top - pad}px`;
+                        spotlight.style.left = `${rect.left - pad}px`;
+                        spotlight.style.width = `${rect.width + (pad * 2)}px`;
+                        spotlight.style.height = `${rect.height + (pad * 2)}px`;
+                        
+                        const tooltip = document.getElementById('tour-tooltip');
+                        const toolWidth = tooltip.offsetWidth;
+                        const toolHeight = tooltip.offsetHeight;
+                        
+                        let top = 0;
+                        let left = 0;
+                        
+                        const sTop = rect.top - pad;
+                        const sLeft = rect.left - pad;
+                        const sWidth = rect.width + (pad * 2);
+                        const sHeight = rect.height + (pad * 2);
+                        
+                        if (step.position === 'bottom') {
+                            top = sTop + sHeight + 15;
+                            left = sLeft + (sWidth / 2) - (toolWidth / 2);
+                        } else if (step.position === 'top') {
+                            top = sTop - toolHeight - 15;
+                            left = sLeft + (sWidth / 2) - (toolWidth / 2);
+                        } else if (step.position === 'left') {
+                            top = sTop + (sHeight / 2) - (toolHeight / 2);
+                            left = sLeft - toolWidth - 15;
+                        } else if (step.position === 'right') {
+                            top = sTop + (sHeight / 2) - (toolHeight / 2);
+                            left = sLeft + sWidth + 15;
+                        }
+                        
+                        if (left < 10) left = 10;
+                        if (left + toolWidth > window.innerWidth) left = window.innerWidth - toolWidth - 10;
+                        if (top < 10) top = 10;
+                        if (top + toolHeight > window.innerHeight) top = window.innerHeight - toolHeight - 10;
+                        
+                        tooltip.style.top = `${top}px`;
+                        tooltip.style.left = `${left}px`;
+                    }
+                });
+            }
+        }
+
+        // Recalculate spotlight and tooltip positioning on scroll/resize
+        window.addEventListener('resize', updateTourLayout);
+        window.addEventListener('scroll', updateTourLayout);
+
+        // Auto start tour on page load if session storage is empty
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!sessionStorage.getItem('onboarding_tour_played')) {
+                    startOnboardingTour();
+                }
+            }, 800);
+        });
     </script>
+
+    <!-- Onboarding Tour Elements -->
+    <div id="tour-backdrop" class="fixed inset-0 z-[99997] bg-transparent hidden pointer-events-auto"></div>
+
+    <div id="tour-spotlight" class="fixed pointer-events-auto rounded-[24px] transition-all duration-300 z-[99998] hidden" style="box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.75); border: 2px solid #005bc0;"></div>
+    
+    <div id="tour-tooltip" class="fixed z-[99999] hidden w-[340px] bg-white/90 backdrop-blur-xl border border-white/30 rounded-3xl shadow-2xl p-6 transition-all duration-300 flex flex-col text-left">
+        <div class="flex items-center justify-between gap-2 border-b border-gray-100 pb-3 mb-4">
+            <span id="tour-step-progress" class="text-[10px] font-black text-brand uppercase tracking-wider bg-blue-50 px-2.5 py-1 rounded-full">Step 1 of 6</span>
+            <button onclick="skipOnboardingTour()" class="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors">Skip</button>
+        </div>
+        <h4 id="tour-step-title" class="text-base font-black text-gray-900 leading-tight">Step Title</h4>
+        <p id="tour-step-desc" class="text-xs text-gray-500 font-medium mt-2 leading-relaxed">Step description goes here.</p>
+        <div class="flex items-center justify-between gap-3 mt-6">
+            <button id="tour-prev-btn" onclick="prevOnboardingStep()" class="bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-700 font-extrabold text-xs py-2.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                Back
+            </button>
+            <button id="tour-next-btn" onclick="nextOnboardingStep()" class="bg-brand hover:bg-blue-700 text-white font-extrabold text-xs py-2.5 px-5 rounded-xl transition-all shadow-md">
+                Next
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating Help Tour Replay Button -->
+    <button id="tour-restart-btn" onclick="startOnboardingTour()" class="fixed bottom-6 right-6 z-[9999] w-12 h-12 rounded-full bg-brand text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center group" title="Restart Product Tour">
+        <span class="material-symbols-outlined text-2xl group-hover:rotate-45 transition-transform duration-300">help</span>
+    </button>
 </x-app-layout>

@@ -67,41 +67,123 @@
     <div class="py-2 space-y-8">
         <!-- Review Block (If completed and no review yet) -->
         @if($order->status === 'completed' && !$order->review)
-            <div class="bg-gradient-to-r from-brand via-blue-600 to-blue-700 rounded-3xl p-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-                <div>
-                    <h3 class="text-2xl font-black mb-1 leading-tight font-jakarta">Laundry Delivered!</h3>
-                    <p class="opacity-80 text-sm">How was your experience using Laundryan?</p>
+            <div class="bg-white border border-gray-100 rounded-3xl p-8 shadow-md space-y-6 text-left">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-brand flex items-center justify-center">
+                        <span class="material-symbols-outlined text-xl">reviews</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-gray-900 leading-tight">Rate Your Experience</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Please take a moment to rate our service and couriers.</p>
+                    </div>
                 </div>
-                <form action="{{ route('customer.reviews.store', $order->id) }}" method="POST" class="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+
+                <form action="{{ route('customer.reviews.store', $order->id) }}" method="POST" class="space-y-6">
                     @csrf
-                    <select name="rating" class="rounded-xl border-none text-blue-900 font-extrabold px-4 py-3 text-xs bg-white focus:ring-2 focus:ring-brand" required>
-                        <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
-                        <option value="4">⭐⭐⭐⭐ Good</option>
-                        <option value="3">⭐⭐⭐ Neutral</option>
-                        <option value="2">⭐⭐ Bad</option>
-                        <option value="1">⭐ Terrible</option>
-                    </select>
-                    <input type="text" name="comment" placeholder="Write your feedback..." class="rounded-xl border-none text-blue-900 px-4 py-3 text-xs bg-white focus:ring-2 focus:ring-brand min-w-[200px]" required>
-                    <button type="submit" class="bg-white text-brand font-black text-xs px-6 py-3 rounded-xl hover:bg-blue-50 transition-all shadow-lg active:scale-95 uppercase tracking-wider">
-                        Submit Review
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Laundry Service Rating -->
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-gray-700 block uppercase tracking-wider">Laundry Service</label>
+                            <div class="flex items-center gap-1 text-yellow-400" x-data="{ rating: 5 }">
+                                <input type="hidden" name="rating_service" :value="rating">
+                                <template x-for="i in 5">
+                                    <button type="button" @click="rating = i" class="hover:scale-125 transition-transform">
+                                        <svg class="w-7 h-7 fill-current" :class="i <= rating ? 'text-yellow-400' : 'text-gray-200'" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Pickup Courier Rating -->
+                        @if($order->pickupCourier)
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-700 block uppercase tracking-wider">Pickup Courier ({{ $order->pickupCourier->name }})</label>
+                                <div class="flex items-center gap-1 text-yellow-400" x-data="{ rating: 5 }">
+                                    <input type="hidden" name="rating_pickup_courier" :value="rating">
+                                    <template x-for="i in 5">
+                                        <button type="button" @click="rating = i" class="hover:scale-125 transition-transform">
+                                            <svg class="w-7 h-7 fill-current" :class="i <= rating ? 'text-yellow-400' : 'text-gray-200'" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Delivery Courier Rating -->
+                        @if($order->deliveryCourier)
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-700 block uppercase tracking-wider">Delivery Courier ({{ $order->deliveryCourier->name }})</label>
+                                <div class="flex items-center gap-1 text-yellow-400" x-data="{ rating: 5 }">
+                                    <input type="hidden" name="rating_delivery_courier" :value="rating">
+                                    <template x-for="i in 5">
+                                        <button type="button" @click="rating = i" class="hover:scale-125 transition-transform">
+                                            <svg class="w-7 h-7 fill-current" :class="i <= rating ? 'text-yellow-400' : 'text-gray-200'" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-black text-gray-700 block uppercase tracking-wider">Write your feedback</label>
+                        <textarea name="comment" rows="3" placeholder="Share your experience (e.g. laundry cleanliness, speed, courier friendliness...)" class="w-full rounded-2xl border-gray-200 focus:border-brand focus:ring-brand text-xs p-4" required></textarea>
+                    </div>
+
+                    <button type="submit" class="bg-brand hover:bg-blue-700 text-white font-black text-xs px-6 py-3.5 rounded-xl transition-all shadow-md active:scale-95 uppercase tracking-wider inline-flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">send</span> Submit Review
                     </button>
                 </form>
             </div>
         @endif
 
         @if($order->review)
-            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
-                <div>
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Your Review</span>
-                    <div class="flex items-center text-yellow-400 mb-1">
-                        @for($i=0; $i<$order->review->rating; $i++)
-                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
-                        @endfor
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 text-left">
+                <div class="flex-1 space-y-3">
+                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Your Review</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 p-3 rounded-xl">
+                            <span class="text-[9px] font-black text-gray-400 uppercase block mb-1">Service Rating</span>
+                            <div class="flex items-center text-yellow-400">
+                                @for($i=0; $i<($order->review->rating_service ?? $order->review->rating); $i++)
+                                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                @endfor
+                            </div>
+                        </div>
+                        @if($order->review->rating_pickup_courier)
+                            <div class="bg-gray-50 p-3 rounded-xl">
+                                <span class="text-[9px] font-black text-gray-400 uppercase block mb-1">Pickup Courier Rating</span>
+                                <div class="flex items-center text-yellow-400">
+                                    @for($i=0; $i<$order->review->rating_pickup_courier; $i++)
+                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                    @endfor
+                                </div>
+                            </div>
+                        @endif
+                        @if($order->review->rating_delivery_courier)
+                            <div class="bg-gray-50 p-3 rounded-xl">
+                                <span class="text-[9px] font-black text-gray-400 uppercase block mb-1">Delivery Courier Rating</span>
+                                <div class="flex items-center text-yellow-400">
+                                    @for($i=0; $i<$order->review->rating_delivery_courier; $i++)
+                                        <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                    @endfor
+                                </div>
+                            </div>
+                        @endif
                     </div>
-                    <p class="text-gray-700 font-bold text-xs italic">"{{ $order->review->comment }}"</p>
+                    @if($order->review->comment)
+                        <p class="text-gray-700 font-bold text-xs italic bg-gray-50 p-4 rounded-2xl border border-gray-100">"{{ $order->review->comment }}"</p>
+                    @endif
                 </div>
                 <div>
-                    <a href="{{ route('customer.orders.invoice', $order->id) }}" class="inline-flex items-center gap-1 bg-brand/5 hover:bg-brand/10 text-brand font-black text-xs px-4 py-2.5 rounded-xl transition-all">
+                    <a href="{{ route('customer.orders.invoice', $order->id) }}" class="inline-flex items-center gap-1 bg-brand/5 hover:bg-brand/10 text-brand font-black text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap">
                         <span class="material-symbols-outlined text-[16px]">download</span>
                         Download Invoice PDF
                     </a>
@@ -258,27 +340,8 @@
                     </div>
                 </div>
 
-                <!-- Service Progress Photos (Uploaded by Courier/Employee) -->
-                <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 text-left">
-                    <h3 class="text-lg font-black text-gray-900 mb-6 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-brand">photo_library</span>
-                        Laundry Progress Photo Documentation
-                    </h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        @forelse($order->photos as $photo)
-                            <div class="group relative rounded-2xl overflow-hidden shadow-sm aspect-square bg-gray-50 border border-gray-100">
-                                <img src="{{ asset('storage/' . $photo->photo_path) }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
-                                <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-black tracking-wider p-2.5 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {{ str_replace('_', ' ', strtoupper($photo->context)) }}
-                                </div>
-                            </div>
-                        @empty
-                            <div class="col-span-full text-center text-gray-400 py-10 italic text-xs">
-                                No progress photo documentation uploaded by staff yet.
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
+                {{-- Full-width: Photo Documentation --}}
+                @include('partials.order-photo-documentation', ['order' => $order])
             </div>
 
             <!-- Column right: Sidebar details (1/3 width) -->
@@ -324,8 +387,116 @@
                             <span class="text-sm font-black text-gray-900">Total Amount</span>
                             <span class="text-lg font-black text-brand">Rp {{ number_format($order->total_price, 0, ',', '.') }}</span>
                         </div>
+                        @if($order->payment_status === 'paid')
+                            <hr class="border-gray-50">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 font-medium">Payment Method</span>
+                                <span class="text-gray-900 font-extrabold">
+                                    @php
+                                        $method = $order->payment_method ?: ($order->latestPayment?->payment_method);
+                                        if ($method === 'qris') {
+                                            $methodLabel = 'QRIS';
+                                        } elseif ($method === 'stripe') {
+                                            $methodLabel = 'Card / Online (Stripe)';
+                                        } elseif (in_array($method, ['transfer', 'bank_transfer'])) {
+                                            $methodLabel = 'Bank Transfer';
+                                        } else {
+                                            $methodLabel = $method ? ucwords(str_replace('_', ' ', $method)) : '-';
+                                        }
+                                    @endphp
+                                    {{ $methodLabel }}
+                                </span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-gray-400 font-medium">Payment Time</span>
+                                <span class="text-gray-900 font-extrabold text-right">
+                                    @php
+                                        $paymentDate = $order->latestPayment && $order->latestPayment->status === 'success'
+                                            ? $order->latestPayment->payment_date
+                                            : null;
+                                        if (!$paymentDate && $order->updated_at) {
+                                            $paymentDate = $order->updated_at;
+                                        }
+                                    @endphp
+                                    {{ $paymentDate ? $paymentDate->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : '-' }}
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
+
+                @if($order->payment_method === 'bank_transfer')
+                    @php
+                        $latestPayment = $order->payments->sortByDesc('created_at')->first();
+                    @endphp
+                    <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 space-y-6">
+                        <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-brand">receipt_long</span>
+                            Payment Proof Receipt
+                        </h3>
+                        @if($latestPayment && $latestPayment->proof_path)
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 space-y-3">
+                                <a href="{{ asset('storage/' . $latestPayment->proof_path) }}" target="_blank" class="block group relative w-full h-32 rounded-xl overflow-hidden border border-gray-200 bg-white hover:border-blue-400 transition-colors shadow-sm">
+                                    <img src="{{ asset('storage/' . $latestPayment->proof_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-black gap-1">
+                                        <span class="material-symbols-outlined text-sm">zoom_in</span> View Receipt
+                                    </div>
+                                </a>
+                            </div>
+                        @else
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 text-center py-6 text-gray-400 italic text-xs">
+                                No payment proof uploaded yet
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- Courier Information -->
+                @if($order->pickupCourier || $order->deliveryCourier)
+                    <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 space-y-6">
+                        <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-brand">sports_motorsports</span>
+                            Assigned Courier
+                        </h3>
+                        <div class="space-y-6">
+                            @if($order->pickupCourier)
+                                <div class="flex items-center gap-4">
+                                    <img src="{{ $order->pickupCourier->photo ? asset('storage/' . $order->pickupCourier->photo) : 'https://ui-avatars.com/api/?name=' . urlencode($order->pickupCourier->name) . '&background=EBF4FF&color=005bc0' }}" class="w-12 h-12 rounded-2xl object-cover border border-gray-100 shadow-sm">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="text-[9px] font-black text-amber-600 uppercase tracking-wider block">Pickup Courier</span>
+                                        <p class="text-sm font-extrabold text-gray-900 truncate">{{ $order->pickupCourier->name }}</p>
+                                        <p class="text-xs text-gray-500 font-medium">{{ $order->pickupCourier->phone ?? '-' }}</p>
+                                    </div>
+                                    <a href="tel:{{ $order->pickupCourier->phone }}" class="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-brand flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-sm">phone</span>
+                                    </a>
+                                </div>
+                            @endif
+
+                            @if($order->deliveryCourier)
+                                <div class="flex items-center gap-4 pt-4 border-t border-gray-50">
+                                    <img src="{{ $order->deliveryCourier->photo ? asset('storage/' . $order->deliveryCourier->photo) : 'https://ui-avatars.com/api/?name=' . urlencode($order->deliveryCourier->name) . '&background=EBF4FF&color=005bc0' }}" class="w-12 h-12 rounded-2xl object-cover border border-gray-100 shadow-sm">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="text-[9px] font-black text-emerald-600 uppercase tracking-wider block">Delivery Courier</span>
+                                        <p class="text-sm font-extrabold text-gray-900 truncate">{{ $order->deliveryCourier->name }}</p>
+                                        <p class="text-xs text-gray-500 font-medium">{{ $order->deliveryCourier->phone ?? '-' }}</p>
+                                    </div>
+                                    <a href="tel:{{ $order->deliveryCourier->phone }}" class="p-2.5 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors text-brand flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-sm">phone</span>
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @else
+                    <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 space-y-4">
+                        <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-gray-400">sports_motorsports</span>
+                            Assigned Courier
+                        </h3>
+                        <p class="text-xs text-gray-400 italic">Awaiting courier assignment...</p>
+                    </div>
+                @endif
 
                 <!-- Custom Note split rendering -->
                 @php
@@ -417,7 +588,21 @@
                         @forelse($order->messages as $msg)
                             <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
                                 <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
-                                    <p class="text-[9px] opacity-70 mb-0.5 font-bold">{{ $msg->sender->name }} ({{ ucfirst($msg->sender->role) }})</p>
+                                    @php
+                                        $roleColors = match($msg->sender->role) {
+                                            'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                            'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                            'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
+                                            default => 'bg-blue-100 text-blue-700 border-blue-200',
+                                        };
+                                        $isMine = $msg->sender_id === auth()->id();
+                                    @endphp
+                                    <p class="text-[9px] mb-1 font-black flex items-center gap-1">
+                                        <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
+                                        <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
+                                            {{ $msg->sender->role }}
+                                        </span>
+                                    </p>
                                     <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
                                 </div>
                                 <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
@@ -449,39 +634,129 @@
             const orderId = {{ $order->id }};
             const currentUserId = {{ auth()->id() }};
 
-            // Initialize map coordinates (fallback to Surabaya/Jakarta center)
-            var lat = {{ $latestLocation->latitude ?? -6.2000 }};
-            var lng = {{ $latestLocation->longitude ?? 106.8166 }};
-            
-            var map = L.map('tracking-map').setView([lat, lng], 15);
+            // Map Setup
+            const isPickupFlow = {{ in_array($order->status, ['waiting_pickup', 'picking_up', 'picked_up', 'in_transit_to_laundry', 'penjemputan', 'dijemput', 'diantar', 'sampai']) ? 'true' : 'false' }};
+            const destLat = isPickupFlow ? {{ $order->pickup_lat ?? -6.2000 }} : {{ $order->delivery_lat ?? -6.2000 }};
+            const destLng = isPickupFlow ? {{ $order->pickup_lng ?? 106.8166 }} : {{ $order->delivery_lng ?? 106.8166 }};
+
+            var map = L.map('tracking-map').setView([destLat, destLng], 14);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
 
-            var courierMarker = null;
+            // Custom markers
+            const customerIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
 
+            const courierIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            // Create markers
+            var customerMarker = L.marker([destLat, destLng], { icon: customerIcon })
+                .addTo(map)
+                .bindPopup(isPickupFlow ? 'Pickup Destination (Your Home)' : 'Delivery Destination (Your Home)')
+                .openPopup();
+
+            var courierMarker = null;
+            var routeLine = null;
+
+            function updateRoute() {
+                if (customerMarker && courierMarker) {
+                    const latlngs = [
+                        customerMarker.getLatLng(),
+                        courierMarker.getLatLng()
+                    ];
+                    if (!routeLine) {
+                        routeLine = L.polyline(latlngs, { color: '#005bc0', weight: 4, dashArray: '8, 8', opacity: 0.8 }).addTo(map);
+                    } else {
+                        routeLine.setLatLngs(latlngs);
+                    }
+                }
+            }
+
+            function setCourierPosition(lat, lng) {
+                const newLatLng = new L.LatLng(lat, lng);
+                if (!courierMarker) {
+                    courierMarker = L.marker(newLatLng, { icon: courierIcon })
+                        .addTo(map)
+                        .bindPopup('Courier is here')
+                        .openPopup();
+                } else {
+                    courierMarker.setLatLng(newLatLng);
+                }
+                updateRoute();
+                // Fit bounds to show both
+                const group = new L.featureGroup([customerMarker, courierMarker]);
+                map.fitBounds(group.getBounds().pad(0.15));
+            }
+
+            function setCustomerPosition(lat, lng) {
+                const newLatLng = new L.LatLng(lat, lng);
+                customerMarker.setLatLng(newLatLng);
+                updateRoute();
+            }
+
+            // Set initial courier position if loaded
             @if($latestLocation)
-                courierMarker = L.marker([lat, lng]).addTo(map)
-                    .bindPopup('Courier is here')
-                    .openPopup();
-            @else
-                var tempMarker = L.marker([lat, lng]).addTo(map).bindPopup('Awaiting courier location...').openPopup();
+                setCourierPosition({{ $latestLocation->latitude }}, {{ $latestLocation->longitude }});
             @endif
 
-            // Real-time Echo Listeners (Pusher wrapper)
+            // Watch customer's real position and report to server
+            const activeTrackingStatuses = [
+                'penjemputan', 'dijemput', 'diantar', 'sampai',
+                'pengantaran', 'diantarkan', 'delivering', 'picking_up'
+            ];
+            const orderStatus = '{{ $order->status }}';
+
+            if (activeTrackingStatuses.includes(orderStatus) && navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        setCustomerPosition(lat, lng);
+
+                        // Send to server
+                        fetch('{{ route("customer.location.update") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                latitude: lat,
+                                longitude: lng,
+                                order_id: orderId
+                            })
+                        });
+                    },
+                    (err) => console.log('Customer Geolocation watch error:', err),
+                    { enableHighAccuracy: true, maximumAge: 10000 }
+                );
+            }
+
+            // Echo Channel private order
             if (window.Echo) {
                 window.Echo.private(`order.${orderId}`)
                     .listen('LocationUpdated', (e) => {
-                        console.log('Location updated:', e.location);
-                        var newLatLng = new L.LatLng(e.location.latitude, e.location.longitude);
-                        if (!courierMarker) {
-                            if (tempMarker) map.removeLayer(tempMarker);
-                            courierMarker = L.marker(newLatLng).addTo(map).bindPopup('Courier is here').openPopup();
-                        } else {
-                            courierMarker.setLatLng(newLatLng);
+                        const sender = e.location.user;
+                        if (sender && sender.role === 'kurir') {
+                            setCourierPosition(e.location.latitude, e.location.longitude);
+                        } else if (sender && sender.role === 'pelanggan' && sender.id !== currentUserId) {
+                            setCustomerPosition(e.location.latitude, e.location.longitude);
                         }
-                        map.panTo(newLatLng);
                     })
                     .listen('OrderStatusUpdated', (e) => {
                         window.location.reload();
@@ -491,14 +766,46 @@
                     });
             }
 
+            // AJAX Polling Fallback (every 8 seconds)
+            function pollLocations() {
+                fetch(`/orders/${orderId}/locations`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.courier) {
+                            setCourierPosition(data.courier.latitude, data.courier.longitude);
+                        }
+                        if (data.customer) {
+                            setCustomerPosition(data.customer.latitude, data.customer.longitude);
+                        }
+                    })
+                    .catch(err => console.log('Polling error:', err));
+            }
+            if (activeTrackingStatuses.includes(orderStatus) || '{{ $latestLocation }}') {
+                setInterval(pollLocations, 8000);
+            }
+
             function appendMessage(msg) {
                 const chatContainer = document.getElementById('chat-scroller');
                 const isMine = msg.sender_id === currentUserId;
                 
+                let roleColors = 'bg-blue-100 text-blue-700 border-blue-200';
+                if (msg.sender.role === 'admin') {
+                    roleColors = 'bg-rose-100 text-rose-700 border-rose-200';
+                } else if (msg.sender.role === 'karyawan') {
+                    roleColors = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                } else if (msg.sender.role === 'kurir') {
+                    roleColors = 'bg-amber-100 text-amber-700 border-amber-200';
+                }
+
                 const msgHtml = `
                     <div class="flex flex-col ${isMine ? 'items-end' : 'items-start'} animate-fade-in">
                         <div class="max-w-[85%] rounded-2xl p-3.5 ${isMine ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none'}">
-                            <p class="text-[9px] opacity-70 mb-0.5 font-bold">${msg.sender.name} (${msg.sender.role})</p>
+                            <p class="text-[9px] mb-1 font-black flex items-center gap-1">
+                                <span class="font-extrabold ${isMine ? 'text-white' : 'text-gray-900'}">${msg.sender.name}</span>
+                                <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider ${roleColors}">
+                                    ${msg.sender.role}
+                                </span>
+                            </p>
                             <p class="text-xs font-bold leading-normal">${msg.message}</p>
                         </div>
                         <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">Just now</span>

@@ -1,3 +1,5 @@
+
+
 <?php
 
 namespace App\Observers;
@@ -35,6 +37,22 @@ class OrderObserver
                 'status' => $order->payment_status === 'paid' ? 'success' : 'pending',
                 'payment_date' => $order->payment_status === 'paid' ? now() : null,
             ]);
+        }
+    }
+
+    public function updating(Order $order)
+    {
+        if ($order->isDirty('status') || $order->isDirty('pickup_courier_id') || $order->isDirty('delivery_courier_id')) {
+            $status = $order->status;
+            $pickupStatuses = [
+                'pending_payment', 'waiting_pickup', 'picking_up', 'picked_up', 'in_transit_to_laundry', 'arrived_at_laundry',
+                'penjemputan', 'dijemput', 'diantar', 'sampai'
+            ];
+            if (in_array($status, $pickupStatuses)) {
+                $order->courier_id = $order->pickup_courier_id;
+            } else {
+                $order->courier_id = $order->delivery_courier_id;
+            }
         }
     }
 

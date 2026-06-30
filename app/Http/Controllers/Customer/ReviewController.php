@@ -13,7 +13,9 @@ class ReviewController extends Controller
     public function store(Request $request, Order $order)
     {
         $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
+            'rating_service' => 'required|integer|min:1|max:5',
+            'rating_pickup_courier' => 'nullable|integer|min:1|max:5',
+            'rating_delivery_courier' => 'nullable|integer|min:1|max:5',
             'comment' => 'nullable|string|max:500',
         ]);
 
@@ -25,9 +27,20 @@ class ReviewController extends Controller
             return redirect()->back()->with('error', 'You can only review completed orders.');
         }
 
+        $ratings = array_filter([
+            $request->rating_service,
+            $request->rating_pickup_courier,
+            $request->rating_delivery_courier,
+        ]);
+        $avgRating = count($ratings) > 0 ? (int)round(array_sum($ratings) / count($ratings)) : 5;
+
         $review = Review::create([
             'order_id' => $order->id,
-            'rating' => $request->rating,
+            'rating' => $avgRating,
+            'rating_service' => $request->rating_service,
+            'rating_courier' => $request->rating_delivery_courier ?: $request->rating_pickup_courier, // backward compatibility
+            'rating_pickup_courier' => $request->rating_pickup_courier,
+            'rating_delivery_courier' => $request->rating_delivery_courier,
             'comment' => $request->comment,
         ]);
 

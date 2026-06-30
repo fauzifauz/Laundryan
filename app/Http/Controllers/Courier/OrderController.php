@@ -132,6 +132,10 @@ class OrderController extends Controller
         // Always broadcast location to admin tracking channel
         broadcast(new \App\Events\CourierLocationUpdated($location));
 
+        if ($request->order_id) {
+            broadcast(new \App\Events\LocationUpdated($location));
+        }
+
         return response()->json(['success' => true]);
     }
 }

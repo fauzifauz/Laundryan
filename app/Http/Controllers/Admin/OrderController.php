@@ -343,8 +343,14 @@ class OrderController extends Controller
         $pickupCoords = $geocode($pickupAddress);
         $deliveryCoords = $geocode($deliveryAddress);
 
+        $service = \App\Models\Service::find($request->input('service_id'));
+        $itemType = \App\Models\ItemType::find($request->input('item_type_id'));
+        $serviceInitials = $service ? strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $service->name), 0, 2)) : 'SV';
+        $itemInitials = $itemType ? strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $itemType->name), 0, 2)) : 'IT';
+        $orderCode = 'ORD-' . $serviceInitials . '-' . $itemInitials . '-' . strtoupper(Str::random(6));
+
         $order = Order::create([
-            'order_code' => 'ORD-' . strtoupper(Str::random(10)),
+            'order_code' => $orderCode,
             'customer_id' => $customerId,
             'service_id' => $request->input('service_id'),
             'item_type_id' => $request->input('item_type_id'),
@@ -394,7 +400,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['customer', 'service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'statusLogs.user', 'review', 'messages.sender']);
+        $order->load(['customer', 'service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'statusLogs.user', 'review', 'messages.sender', 'payments']);
 
         $couriers = User::where('role', 'kurir')->where('status', 'active')->get();
         $qrCode = $this->generateQrCode(route('admin.orders.show', $order->id));

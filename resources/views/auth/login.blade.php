@@ -198,5 +198,9 @@
             </div>
         </div>
     </div>
+    <script>
+        // Clear onboarding flag to force the tour to start again upon next login/session
+        sessionStorage.removeItem('onboarding_tour_played');
+    </script>
 </body>
 </html>
