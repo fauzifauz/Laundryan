@@ -41,8 +41,8 @@
 
             <!-- Stats Overview (Spending & Count) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
-                <!-- Stat Card 1 -->
-                <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg transition-shadow duration-300">
+                <!-- Stat Card 1 (Total Spending) -->
+                <a href="{{ route('customer.payments.index', ['status' => 'success']) }}" class="block bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Total Spending</p>
                         <h4 class="text-2xl font-black text-gray-900 mt-1">Rp {{ number_format($totalSpending, 0, ',', '.') }}</h4>
@@ -51,18 +51,26 @@
                     <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                         <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
                     </div>
-                </div>
+                </a>
 
-                <!-- Stat Card 2 -->
-                <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg transition-shadow duration-300">
+                <!-- Stat Card 2 (Order Activity) -->
+                <div class="bg-white rounded-3xl p-6 shadow-md border border-gray-100 flex items-center justify-between hover:shadow-lg transition-all duration-300">
                     <div>
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Order Activity</p>
-                        <div class="flex items-baseline gap-2 mt-1">
-                            <span class="text-2xl font-black text-brand">{{ $activeOrdersCount }}</span>
-                            <span class="text-xs text-gray-500">Active</span>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">Order Activity</p>
+                        <div class="flex items-center gap-3">
+                            <!-- Active Link -->
+                            <a href="{{ route('customer.orders.index', ['status' => 'active']) }}" class="flex items-baseline gap-1 hover:text-brand group transition-colors">
+                                <span class="text-2xl font-black text-brand group-hover:scale-105 transition-transform">{{ $activeOrdersCount }}</span>
+                                <span class="text-xs text-gray-500 font-bold group-hover:underline">Active</span>
+                            </a>
+                            
                             <span class="text-gray-300 font-light">|</span>
-                            <span class="text-lg font-black text-gray-700">{{ $completedOrdersCount }}</span>
-                            <span class="text-xs text-gray-500">Completed</span>
+                            
+                            <!-- Completed Link -->
+                            <a href="{{ route('customer.orders.index', ['status' => 'completed']) }}" class="flex items-baseline gap-1 hover:text-brand group transition-colors">
+                                <span class="text-2xl font-black text-gray-700 group-hover:scale-105 transition-transform">{{ $completedOrdersCount }}</span>
+                                <span class="text-xs text-gray-500 font-bold group-hover:underline">Completed</span>
+                            </a>
                         </div>
                     </div>
                     <div class="w-12 h-12 rounded-2xl bg-blue-50 text-brand flex items-center justify-center">
@@ -72,138 +80,157 @@
             </div>
         </div>
 
-        <!-- Latest Order Tracking Timeline Section -->
-        <div class="bg-white rounded-3xl p-8 shadow-md border border-gray-100">
-            <div class="flex justify-between items-center mb-6">
+        <!-- Active Order Tracking Timeline Section -->
+        <div class="bg-white rounded-3xl p-8 shadow-md border border-gray-100 space-y-8">
+            <div class="flex justify-between items-center pb-2 border-b border-gray-50">
                 <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <span class="material-symbols-outlined text-brand">track_changes</span>
-                    Latest Laundry Order Status
+                    Active Laundry Orders Status
                 </h3>
-                @if($latestOrder)
-                    <a href="{{ route('customer.orders.show', $latestOrder->id) }}" class="text-xs font-bold text-brand hover:underline flex items-center gap-1">
-                        Tracking Details
-                        <span class="material-symbols-outlined text-sm">open_in_new</span>
-                    </a>
-                @endif
             </div>
 
-            @if($latestOrder)
-                <!-- Order Information Overview -->
-                <div class="bg-gray-50 rounded-2xl p-6 mb-8 grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div>
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Order Code</span>
-                        <p class="text-sm font-black text-brand mt-0.5">{{ $latestOrder->order_code }}</p>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Service & Category</span>
-                        <p class="text-sm font-bold text-gray-800 mt-0.5">{{ $latestOrder->service->name }} ({{ $latestOrder->itemType->name }})</p>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Soap & Fragrance</span>
-                        <p class="text-sm font-medium text-gray-600 mt-0.5">{{ $latestOrder->soap ?? '-' }} / {{ $latestOrder->fragrance ?? '-' }}</p>
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Payment Status</span>
-                        <p class="mt-0.5">
-                            @if($latestOrder->payment_status === 'paid')
-                                <span class="px-2 py-0.5 text-[10px] font-black bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200">PAID</span>
-                            @else
-                                <span class="px-2 py-0.5 text-[10px] font-black bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">PENDING</span>
-                            @endif
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Timeline Visualization -->
-                @php
-                    $stages = [
-                        'ordered' => ['label' => 'Order Placed', 'statuses' => ['pending_payment', 'waiting_pickup']],
-                        'transit' => ['label' => 'Pickup & Transit', 'statuses' => ['picking_up', 'picked_up', 'in_transit_to_laundry']],
-                        'processing' => ['label' => 'Processing', 'statuses' => ['arrived_at_laundry', 'washing', 'drying_ironing', 'packing']],
-                        'delivery' => ['label' => 'Delivery & Done', 'statuses' => ['ready_for_delivery', 'delivering', 'completed']]
-                    ];
-
-                    // Find current stage index
-                    $currentStageIdx = 0;
-                    $status = $latestOrder->status;
-                    $stageKeys = array_keys($stages);
-                    foreach($stageKeys as $idx => $key) {
-                        if (in_array($status, $stages[$key]['statuses'])) {
-                            $currentStageIdx = $idx;
-                            break;
-                        }
-                    }
-                    if ($status === 'completed') {
-                        $currentStageIdx = 3;
-                    }
-                @endphp
-
-                <div class="relative py-8">
-                    <!-- Progress Bar Line -->
-                    <div class="absolute left-4 md:left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-gray-100 hidden md:block">
-                        <div class="h-full bg-brand rounded-full transition-all duration-1000" style="width: {{ ($currentStageIdx / 3) * 100 }}%"></div>
-                    </div>
-
-                    <!-- Steps Grid -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative z-10">
-                        @foreach(array_values($stages) as $index => $stage)
-                            @php
-                                $isCompleted = $index < $currentStageIdx || $status === 'completed';
-                                $isActive = $index === $currentStageIdx && $status !== 'completed';
-                            @endphp
-                            <div class="flex md:flex-col items-center md:text-center gap-4 md:gap-3">
-                                <!-- Dot Circle icon -->
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 shrink-0
-                                    {{ $isCompleted ? 'bg-brand text-white shadow-[0_0_15px_rgba(0,91,192,0.4)]' : '' }}
-                                    {{ $isActive ? 'bg-blue-100 text-brand ring-4 ring-blue-50 border-2 border-brand animate-pulse' : '' }}
-                                    {{ !$isCompleted && !$isActive ? 'bg-gray-100 text-gray-400' : '' }}
-                                ">
-                                    @if($isCompleted)
-                                        <span class="material-symbols-outlined text-[18px] font-bold">check</span>
-                                    @else
-                                        <span class="font-bold text-xs">{{ $index + 1 }}</span>
-                                    @endif
-                                </div>
-                                
-                                <div>
-                                    <h4 class="text-xs font-bold md:mt-2 transition-colors duration-300 {{ $isActive || $isCompleted ? 'text-gray-900' : 'text-gray-400' }}">
-                                        {{ $stage['label'] }}
-                                    </h4>
-                                    <p class="text-[10px] text-gray-400 mt-0.5">
-                                        @if($isActive)
-                                            <span class="text-brand font-medium">In Progress</span>
-                                        @elseif($isCompleted)
-                                            <span class="text-emerald-600 font-medium">Done</span>
-                                        @else
-                                            Not Started
-                                        @endif
-                                    </p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                @if(in_array($status, ['picking_up', 'delivering']))
-                    <div class="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <span class="material-symbols-outlined text-brand text-3xl animate-bounce">local_shipping</span>
-                            <div class="text-left">
-                                <p class="text-sm font-bold text-blue-900">Courier is on the way!</p>
-                                <p class="text-xs text-blue-700">Track delivery location in real-time on the order details page.</p>
-                            </div>
+            @forelse($activeOrders as $orderIndex => $order)
+                <div class="order-tracking-card transition-all duration-500" data-order-index="{{ $orderIndex }}"
+                     style="{{ $orderIndex >= 2 ? 'display:none;' : '' }}">
+                <div class="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:bg-white hover:shadow-md duration-300">
+                    <!-- Order Information Header -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center border-b border-gray-100/80 pb-6 mb-6">
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Order Code</span>
+                            <a href="{{ route('customer.orders.show', $order->id) }}" class="text-sm font-black text-brand mt-0.5 hover:underline flex items-center gap-1">
+                                {{ $order->order_code }}
+                                <span class="material-symbols-outlined text-xs">open_in_new</span>
+                            </a>
                         </div>
-                        <a href="{{ route('customer.orders.show', $latestOrder->id) }}" class="bg-brand text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow">
-                            Track Live
-                        </a>
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Service & Category</span>
+                            <p class="text-sm font-bold text-gray-800 mt-0.5">{{ $order->service->name }} ({{ $order->itemType->name }})</p>
+                        </div>
+                        <div>
+                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Soap & Fragrance</span>
+                            <p class="text-sm font-medium text-gray-600 mt-0.5">{{ $order->soap ?? '-' }} / {{ $order->fragrance ?? '-' }}</p>
+                        </div>
+                        <div class="flex justify-between items-center gap-2">
+                            <div>
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Payment Status</span>
+                                <p class="mt-0.5">
+                                    @if($order->payment_status === 'paid')
+                                        <span class="px-2 py-0.5 text-[9px] font-black bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 uppercase">PAID</span>
+                                    @else
+                                        <span class="px-2 py-0.5 text-[9px] font-black bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200 uppercase">PENDING</span>
+                                    @endif
+                                </p>
+                            </div>
+                            <a href="{{ route('customer.orders.show', $order->id) }}" class="inline-flex items-center gap-1 bg-brand text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-sm transform active:scale-95 uppercase tracking-wider shrink-0">
+                                Track Details
+                            </a>
+                        </div>
                     </div>
-                @endif
 
-            @else
-                <div class="text-center py-10">
+                    <!-- 9-Stage Timeline -->
+                    @php
+                        $stages = [
+                            ['label' => 'Order Placed', 'statuses' => ['pending_payment', 'waiting_pickup'], 'icon' => 'shopping_cart'],
+                            ['label' => 'Picking Up', 'statuses' => ['picking_up'], 'icon' => 'hail'],
+                            ['label' => 'In Transit', 'statuses' => ['picked_up', 'in_transit_to_laundry'], 'icon' => 'local_shipping'],
+                            ['label' => 'Arrived at Laundry', 'statuses' => ['arrived_at_laundry'], 'icon' => 'storefront'],
+                            ['label' => 'Washing', 'statuses' => ['washing'], 'icon' => 'local_laundry_service'],
+                            ['label' => 'Drying & Ironing', 'statuses' => ['drying_ironing'], 'icon' => 'iron'],
+                            ['label' => 'Packing', 'statuses' => ['packing'], 'icon' => 'inventory_2'],
+                            ['label' => 'Delivering', 'statuses' => ['ready_for_delivery', 'delivering'], 'icon' => 'delivery_dining'],
+                            ['label' => 'Completed', 'statuses' => ['completed'], 'icon' => 'task_alt']
+                        ];
+
+                        $currentStatus = $order->status;
+                        $currentIdx = 0;
+                        foreach($stages as $idx => $stage) {
+                            if (in_array($currentStatus, $stage['statuses'])) {
+                                $currentIdx = $idx;
+                                break;
+                            }
+                        }
+                    @endphp
+
+                    <div class="relative w-full overflow-x-auto timeline-scroll-container py-6 px-4" id="timeline-container-{{ $order->id }}">
+                        <div class="flex items-center min-w-[950px] relative py-2">
+                            <!-- Connecting Line Background -->
+                            <div class="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200 z-0">
+                                <!-- Active Progress Line -->
+                                <div class="h-full bg-brand rounded-full transition-all duration-1000" style="width: {{ ($currentIdx / 8) * 100 }}%"></div>
+                            </div>
+
+                            <!-- Steps -->
+                            @foreach($stages as $index => $stage)
+                                @php
+                                    $isCompleted = $index < $currentIdx;
+                                    $isActive = $index === $currentIdx;
+                                    $isFuture = $index > $currentIdx;
+                                @endphp
+                                <div class="flex-1 flex flex-col items-center relative z-10 step-item-{{ $order->id }}-{{ $index }} {{ $isActive ? 'step-active' : '' }}" data-index="{{ $index }}">
+                                    <!-- Step Circle -->
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm
+                                        {{ $isCompleted ? 'bg-brand text-white border-2 border-brand' : '' }}
+                                        {{ $isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100 border-2 border-brand scale-110 font-bold' : '' }}
+                                        {{ $isFuture ? 'bg-white text-gray-400 border-2 border-gray-200' : '' }}
+                                    ">
+                                        <span class="material-symbols-outlined text-[20px] {{ $isActive ? 'font-bold' : '' }}">
+                                            {{ $stage['icon'] }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Step Label -->
+                                    <span class="text-[11px] font-bold mt-3 text-center transition-colors duration-300 {{ $isActive ? 'text-blue-700 font-extrabold scale-105' : ($isCompleted ? 'text-gray-900 font-semibold' : 'text-gray-400') }}">
+                                        {{ $stage['label'] }}
+                                    </span>
+                                    
+                                    <!-- Status Badge -->
+                                    <span class="text-[9px] mt-1 text-center block">
+                                        @if($isActive)
+                                            <span class="text-brand font-black uppercase tracking-wider bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">Active</span>
+                                        @elseif($isCompleted)
+                                            <span class="text-emerald-600 font-bold uppercase tracking-wider">Done</span>
+                                        @else
+                                            <span class="text-gray-300 font-medium">Pending</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    @if(in_array($currentStatus, ['picking_up', 'delivering']))
+                        <div class="mt-4 p-4 bg-blue-50/50 border border-blue-100/60 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <span class="material-symbols-outlined text-brand text-2xl animate-bounce">local_shipping</span>
+                                <div class="text-left">
+                                    <p class="text-xs font-bold text-blue-900">Courier is currently handling your order!</p>
+                                    <p class="text-[11px] text-blue-700">Track courier live position and contact them directly on the order details page.</p>
+                                </div>
+                            </div>
+                            <a href="{{ route('customer.orders.show', $order->id) }}" class="bg-brand text-white text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow">
+                                Track Live
+                            </a>
+                        </div>
+                    @endif
+                </div>
+                </div>{{-- close .order-tracking-card --}}
+            @empty
+                <div class="text-center py-10 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
                     <span class="material-symbols-outlined text-gray-300 text-5xl">inventory_2</span>
                     <p class="text-gray-500 font-medium mt-3 text-sm">No active orders at the moment.</p>
                     <a href="{{ route('customer.orders.create') }}" class="text-brand font-bold text-xs mt-2 inline-block hover:underline">Create your first laundry order</a>
+                </div>
+            @endforelse
+
+            @if($activeOrders->count() > 2)
+                <!-- Show more / collapse toggle -->
+                <div class="flex justify-center pt-2">
+                    <button id="toggle-orders-btn"
+                        onclick="toggleMoreOrders()"
+                        class="inline-flex items-center gap-2 text-xs font-black text-brand bg-blue-50 hover:bg-blue-100 border border-blue-100 px-6 py-3 rounded-2xl transition-all duration-300 shadow-sm group">
+                        <span id="toggle-orders-label">Show {{ $activeOrders->count() - 2 }} More Order{{ $activeOrders->count() - 2 > 1 ? 's' : '' }}</span>
+                        <span id="toggle-orders-icon" class="material-symbols-outlined text-[18px] transition-transform duration-300 group-hover:translate-y-0.5">expand_more</span>
+                    </button>
                 </div>
             @endif
         </div>
@@ -215,36 +242,270 @@
                 Assigned Courier History
             </h3>
 
-            @if($couriers->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach($couriers as $courier)
-                        <div class="bg-gray-50 rounded-2xl p-5 border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow duration-300 group">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand to-blue-600 text-white flex items-center justify-center font-black text-lg shadow-sm shrink-0">
-                                    {{ substr($courier->name, 0, 1) }}
-                                </div>
-                                <div class="text-left">
-                                    <h4 class="text-sm font-bold text-gray-800">{{ $courier->name }}</h4>
-                                    <p class="text-[10px] text-gray-400 mt-0.5 uppercase font-bold tracking-wider font-jakarta">Laundryan Courier</p>
-                                    <p class="text-xs text-gray-500 mt-1 font-mono">{{ $courier->phone }}</p>
-                                </div>
+            @if($pickupCourierHistory->count() > 0 || $deliveryCourierHistory->count() > 0)
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                    {{-- LEFT: Pickup Couriers --}}
+                    <div>
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="w-8 h-8 rounded-xl bg-blue-50 text-brand flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[18px]">hail</span>
                             </div>
-                            
-                            <div class="flex gap-2">
-                                <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $courier->phone) }}" target="_blank" class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 transition-colors shadow-sm" title="Contact Courier via WhatsApp">
-                                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                        <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.96 9.96 0 001.333 4.993L2 22l5.13-1.347a9.948 9.948 0 004.877 1.277h.005c5.505 0 9.989-4.478 9.99-9.985A9.97 9.97 0 0012.012 2zm6.069 13.985c-.25.702-1.246 1.285-1.71 1.342-.463.057-.927.278-3.003-.57a11.144 11.144 0 01-4.71-3.125 12.08 12.08 0 01-2.228-3.807c-.156-.475-.417-.79-.408-1.312.008-.521.217-.775.392-.953.175-.178.384-.263.576-.263.192 0 .384.004.549.012.176.009.349-.06.529.378.188.459.645 1.57.701 1.685.056.115.093.248.016.4-.076.152-.152.247-.29.414-.138.167-.296.347-.42.493-.138.156-.282.327-.122.602.16.275.711 1.17 1.523 1.89.963.854 1.867 1.13 2.143 1.268.275.137.435.114.596-.069.16-.183.69-.803.873-1.077.184-.275.367-.229.62-.137.253.091 1.6.753 1.875.891.275.137.458.206.52.312.062.106.062.612-.188 1.314z"/>
-                                    </svg>
-                                </a>
+                            <div>
+                                <p class="text-xs font-black text-gray-800 uppercase tracking-wider">Pickup Courier</p>
+                                <p class="text-[10px] text-gray-400">Couriers who picked up your laundry</p>
                             </div>
                         </div>
-                    @endforeach
+
+                        @if($pickupCourierHistory->count() > 0)
+                            <div class="space-y-3">
+                                @foreach($pickupCourierHistory as $history)
+                                    @include('dashboard._courier_card', ['history' => $history, 'accentClass' => 'bg-blue-50 text-brand border-blue-100'])
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
+                                <span class="material-symbols-outlined text-gray-300 text-3xl">person_off</span>
+                                <p class="text-xs text-gray-400 mt-2 italic">No pickup courier assigned yet.</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- RIGHT: Delivery Couriers --}}
+                    <div>
+                        <div class="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+                            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-[18px]">delivery_dining</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-black text-gray-800 uppercase tracking-wider">Delivery Courier</p>
+                                <p class="text-[10px] text-gray-400">Couriers who delivered your laundry back</p>
+                            </div>
+                        </div>
+
+                        @if($deliveryCourierHistory->count() > 0)
+                            <div class="space-y-3">
+                                @foreach($deliveryCourierHistory as $history)
+                                    @include('dashboard._courier_card', ['history' => $history, 'accentClass' => 'bg-emerald-50 text-emerald-700 border-emerald-100'])
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-center py-8 bg-gray-50 border border-dashed border-gray-200 rounded-2xl">
+                                <span class="material-symbols-outlined text-gray-300 text-3xl">person_off</span>
+                                <p class="text-xs text-gray-400 mt-2 italic">No delivery courier assigned yet.</p>
+                            </div>
+                        @endif
+                    </div>
+
                 </div>
             @else
-                <div class="text-center py-6 text-gray-500 text-sm italic">
+                <div class="text-center py-6 text-gray-400 text-sm italic bg-gray-50 border border-dashed border-gray-200 rounded-3xl">
                     No courier assignment history yet.
                 </div>
             @endif
         </div>
     </div>
+
+    <!-- Courier Detail Modal -->
+    <div id="courier-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden" onclick="closeCourierModalOnBgClick(event)" x-cloak>
+        <div class="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl border border-gray-100 relative overflow-hidden flex flex-col max-h-[85vh] transition-all transform animate-fade-in">
+            <!-- Close Button -->
+            <button onclick="closeCourierModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors">
+                <span class="material-symbols-outlined text-[24px]">close</span>
+            </button>
+
+            <!-- Modal Header / Courier Info -->
+            <div class="flex items-center gap-4 border-b border-gray-100 pb-6">
+                <div id="modal-courier-avatar" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand to-blue-600 text-white flex items-center justify-center font-black text-2xl shadow-sm shrink-0">
+                    C
+                </div>
+                <div class="text-left">
+                    <h3 id="modal-courier-name" class="text-xl font-black text-gray-900 leading-none">Courier Name</h3>
+                    <span id="modal-courier-role" class="inline-block px-2.5 py-0.5 text-[9px] font-black bg-blue-50 border border-blue-100 text-brand rounded-full uppercase tracking-wider mt-2.5">
+                        Courier Role
+                    </span>
+                    <p id="modal-courier-phone" class="text-sm text-gray-500 font-mono mt-2">Phone Number</p>
+                    <p id="modal-courier-email" class="text-xs text-gray-400 mt-0.5">Email Address</p>
+                </div>
+            </div>
+
+            <!-- Orders Listing -->
+            <div class="flex-1 overflow-y-auto mt-6 pr-2 custom-scrollbar text-left">
+                <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-4">Orders Handled For You</h4>
+                <div id="modal-orders-list" class="space-y-3">
+                    <!-- Dynamic orders injected here -->
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                <button onclick="closeCourierModal()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs py-3 px-6 rounded-xl transition-all">
+                    Close Details
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .timeline-scroll-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .timeline-scroll-container::-webkit-scrollbar {
+            display: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+
+    <script>
+        // ── Toggle show more / collapse order cards ───────────────────────────
+        let ordersExpanded = false;
+
+        function toggleMoreOrders() {
+            ordersExpanded = !ordersExpanded;
+            const cards = document.querySelectorAll('.order-tracking-card');
+            const label = document.getElementById('toggle-orders-label');
+            const icon  = document.getElementById('toggle-orders-icon');
+            const hiddenCount = cards.length - 2;
+
+            cards.forEach(function(card, i) {
+                if (i >= 2) {
+                    if (ordersExpanded) {
+                        card.style.display = '';
+                        card.style.animation = 'fadeIn 0.3s ease forwards';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+
+            if (ordersExpanded) {
+                label.textContent = 'Collapse Orders';
+                icon.textContent  = 'expand_less';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                label.textContent = 'Show ' + hiddenCount + ' More Order' + (hiddenCount > 1 ? 's' : '');
+                icon.textContent  = 'expand_more';
+                icon.style.transform = '';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // For each timeline container, scroll the active step into center focus
+            setTimeout(function() {
+                document.querySelectorAll('.timeline-scroll-container').forEach(function(container) {
+                    const activeStep = container.querySelector('.step-active');
+                    if (activeStep) {
+                        const containerWidth = container.clientWidth;
+                        const stepOffset = activeStep.offsetLeft;
+                        const stepWidth = activeStep.clientWidth;
+                        const scrollTarget = stepOffset - (containerWidth / 2) + (stepWidth / 2);
+                        container.scrollTo({
+                            left: scrollTarget,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            }, 300);
+
+            // Register Laravel Echo listener for each active order
+            if (window.Echo) {
+                @foreach($activeOrders as $order)
+                    window.Echo.private('order.{{ $order->id }}')
+                        .listen('OrderStatusUpdated', (e) => {
+                            console.log('Order {{ $order->id }} status updated to:', e.order.status);
+                            window.location.reload();
+                        });
+                @endforeach
+            }
+        });
+
+        function openCourierModal(data) {
+            document.getElementById('modal-courier-avatar').textContent = data.initial;
+            document.getElementById('modal-courier-name').textContent = data.name;
+            document.getElementById('modal-courier-role').textContent = data.role;
+            document.getElementById('modal-courier-phone').textContent = data.phone;
+            document.getElementById('modal-courier-email').textContent = data.email || '-';
+
+            const ordersList = document.getElementById('modal-orders-list');
+            ordersList.innerHTML = '';
+
+            if (data.orders.length === 0) {
+                ordersList.innerHTML = '<p class="text-xs text-gray-400 italic">No orders found.</p>';
+            } else {
+                data.orders.forEach(order => {
+                    const statusMapping = {
+                        'pending_payment': 'Awaiting Payment',
+                        'waiting_pickup': 'Awaiting Courier',
+                        'picking_up': 'Courier Picking Up',
+                        'picked_up': 'Picked Up',
+                        'in_transit_to_laundry': 'Transit to Laundry',
+                        'arrived_at_laundry': 'Arrived at Laundry',
+                        'washing': 'Washing',
+                        'drying_ironing': 'Drying & Ironing',
+                        'packing': 'Packing Clothes',
+                        'ready_for_delivery': 'Ready for Delivery',
+                        'delivering': 'Out for Delivery',
+                        'completed': 'Completed',
+                    };
+                    const statusLabel = statusMapping[order.status] || order.status.replace(/_/g, ' ');
+
+                    ordersList.insertAdjacentHTML('beforeend', `
+                        <div class="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-bold text-xs text-brand">${order.order_code}</span>
+                                    <span class="px-2 py-0.5 text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100 rounded-full uppercase">${order.role_in_order}</span>
+                                </div>
+                                <p class="text-xs font-bold text-gray-700 mt-1">${order.service_name} (${order.item_type_name})</p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">${order.date}</p>
+                            </div>
+                            <div class="flex sm:flex-col items-end gap-2 w-full sm:w-auto justify-between sm:justify-start">
+                                <span class="px-2.5 py-0.5 text-[10px] font-black rounded-full border bg-white border-gray-200 text-gray-700 uppercase">
+                                    ${statusLabel}
+                                </span>
+                                <a href="${order.url}" class="text-[11px] font-extrabold text-brand hover:underline flex items-center gap-0.5">
+                                    Track Order <span class="material-symbols-outlined text-[12px]">open_in_new</span>
+                                </a>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+
+            const modal = document.getElementById('courier-modal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCourierModal() {
+            const modal = document.getElementById('courier-modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function closeCourierModalOnBgClick(event) {
+            if (event.target.id === 'courier-modal') {
+                closeCourierModal();
+            }
+        }
+    </script>
 </x-app-layout>

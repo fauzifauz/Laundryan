@@ -21,15 +21,18 @@
             <div>
                 <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-3">Filter Status</span>
                 <div class="flex flex-wrap gap-2">
+                    @php
+                        $statusParam = request('status', 'all');
+                    @endphp
                     @foreach([
                         'all' => 'All',
-                        'proses_pencucian' => 'Washing Process',
+                        'active' => 'Active',
                         'setrika' => 'Ironing',
                         'packing' => 'Packing',
-                        'selesai' => 'Completed'
+                        'completed' => 'Completed'
                     ] as $key => $label)
                         <button type="submit" name="status" value="{{ $key }}" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border
-                            {{ request('status', 'all') === $key 
+                            {{ $statusParam === $key || ($key === 'completed' && $statusParam === 'selesai') || ($key === 'active' && $statusParam === 'proses_pencucian')
                                 ? 'bg-brand border-brand text-white shadow-sm' 
                                 : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
                             {{ $label }}

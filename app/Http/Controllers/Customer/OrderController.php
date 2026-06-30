@@ -23,17 +23,13 @@ class OrderController extends Controller
         // Filter based on status
         if ($request->filled('status') && $request->status !== 'all') {
             $status = $request->status;
-            if ($status === 'proses_pencucian') {
-                $query->whereIn('status', [
-                    'picking_up', 'picked_up', 'in_transit_to_laundry', 
-                    'arrived_at_laundry', 'washing', 'drying_ironing', 
-                    'ready_for_delivery', 'delivering', 'waiting_pickup'
-                ]);
+            if ($status === 'proses_pencucian' || $status === 'active') {
+                $query->whereNotIn('status', ['completed', 'cancelled']);
             } elseif ($status === 'setrika') {
                 $query->where('status', 'drying_ironing');
             } elseif ($status === 'packing') {
                 $query->where('status', 'packing');
-            } elseif ($status === 'selesai') {
+            } elseif ($status === 'selesai' || $status === 'completed') {
                 $query->where('status', 'completed');
             } else {
                 $query->where('status', $status);

@@ -9,37 +9,62 @@
     <div class="py-2 space-y-6">
         <!-- Filter and Summary Overview card -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Period filter pill container -->
-            <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-between space-y-4">
-                <div>
+            <!-- Period & Status filter container -->
+            <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
+                <!-- Period filter -->
+                <div class="flex-1">
                     <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Period</span>
-                    <form method="GET" action="{{ route('customer.payments.index') }}" class="flex flex-wrap gap-2">
+                    <div class="flex flex-wrap gap-2">
                         @foreach([
                             'all' => 'All Time',
                             'harian' => 'Daily',
                             'bulanan' => 'Monthly',
                             'tahunan' => 'Yearly'
                         ] as $key => $label)
-                            <button type="submit" name="period" value="{{ $key }}" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border
+                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['period' => $key])) }}" 
+                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
                                 {{ $period === $key 
                                     ? 'bg-brand border-brand text-white shadow-sm' 
                                     : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
                                 {{ $label }}
-                            </button>
+                            </a>
                         @endforeach
-                    </form>
+                    </div>
+                </div>
+
+                <!-- Status filter -->
+                <div class="flex-1">
+                    <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Status</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach([
+                            'all' => 'All Status',
+                            'success' => 'Success Only',
+                            'pending' => 'Pending Only'
+                        ] as $key => $label)
+                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['status' => $key])) }}" 
+                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
+                                {{ $status === $key 
+                                    ? 'bg-brand border-brand text-white shadow-sm' 
+                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                                {{ $label }}
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
             </div>
 
             <!-- Simple Payment totals statistics -->
             @php
-                $successfulPaymentsCount = $payments->where('status', 'success')->count();
+                $user = auth()->user();
+                $totalSuccessCount = \App\Models\Payment::whereHas('order', function ($q) use ($user) {
+                    $q->where('customer_id', $user->id);
+                })->where('status', 'success')->count();
             @endphp
             <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center justify-between">
                 <div>
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider">Payments Completed</p>
-                    <h4 class="text-2xl font-black text-emerald-600 mt-1">{{ $successfulPaymentsCount }} Success</h4>
-                    <p class="text-xs text-gray-500 mt-0.5">Successful transactions recorded</p>
+                    <h4 class="text-2xl font-black text-emerald-600 mt-1">{{ $totalSuccessCount }} Success</h4>
+                    <p class="text-xs text-gray-500 mt-0.5 font-medium">Successful transactions recorded</p>
                 </div>
                 <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">check_circle</span>

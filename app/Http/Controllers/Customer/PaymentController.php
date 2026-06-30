@@ -31,9 +31,17 @@ class PaymentController extends Controller
             $query->whereYear('payment_date', Carbon::now()->year);
         }
 
+        // Filter by Status
+        $status = $request->input('status', 'all');
+        if ($status === 'success') {
+            $query->where('status', 'success');
+        } elseif ($status === 'pending') {
+            $query->where('status', 'pending');
+        }
+
         $payments = $query->latest('payment_date')->paginate(10)->withQueryString();
 
-        return view('customer.payments.index', compact('payments', 'period'));
+        return view('customer.payments.index', compact('payments', 'period', 'status'));
     }
 
     public function uploadProof(Request $request, Order $order)
