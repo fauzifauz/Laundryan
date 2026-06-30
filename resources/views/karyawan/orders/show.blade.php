@@ -576,10 +576,38 @@
                                 <span
                                     class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment
                                     Method</span>
+                                @php
+                                    $method = $order->payment_method ?: ($order->latestPayment?->payment_method);
+                                    if ($method === 'qris') {
+                                        $methodLabel = 'QRIS';
+                                    } elseif ($method === 'stripe') {
+                                        $methodLabel = 'Card / Online (Stripe)';
+                                    } elseif (in_array($method, ['transfer', 'bank_transfer'])) {
+                                        $methodLabel = 'Bank Transfer';
+                                    } else {
+                                        $methodLabel = $method ? ucwords(str_replace('_', ' ', $method)) : 'Not Specified';
+                                    }
+                                @endphp
                                 <span class="text-xs font-black text-gray-800 block mt-1 uppercase">
-                                    {{ $order->payment_method ?: 'Not Specified' }}
+                                    {{ $methodLabel }}
                                 </span>
                             </div>
+                            @if($order->payment_status === 'paid')
+                                <div class="col-span-2 border-t border-gray-100 pt-2 mt-1">
+                                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment Completion Time</span>
+                                    @php
+                                        $paymentDate = $order->latestPayment && $order->latestPayment->status === 'success'
+                                            ? $order->latestPayment->payment_date
+                                            : null;
+                                        if (!$paymentDate && $order->updated_at) {
+                                            $paymentDate = $order->updated_at;
+                                        }
+                                    @endphp
+                                    <span class="text-xs font-bold text-gray-800 block mt-0.5">
+                                        {{ $paymentDate ? $paymentDate->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : '-' }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         @if($order->payment_method === 'bank_transfer')
@@ -761,7 +789,7 @@
                                 'ready_for_delivery' => 'Ready for Delivery',
                             ];
                         @endphp
-                        <form action="{{ route('karyawan.orders.status', $order->id) }}" method="POST" class="space-y-4" data-karyawan-status-form>
+                        <form action="{{ route('karyawan.orders.status', $order->id) }}" method="POST" enctype="multipart/form-data" class="space-y-4" data-karyawan-status-form>
                             @csrf
                             <div class="relative">
                                 <select name="status"
@@ -779,6 +807,12 @@
                                 <span
                                     class="material-symbols-outlined absolute right-2.5 top-2.5 text-gray-400 text-[16px] pointer-events-none">expand_more</span>
                             </div>
+
+                            <div class="space-y-1.5 text-left">
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block">Upload Proof Photo (Optional)</label>
+                                <input type="file" name="photo" accept="image/*" class="w-full text-xs font-bold bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-gray-800 focus:border-blue-500 focus:ring-0 transition-all">
+                            </div>
+
                             <button type="submit"
                                 class="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all">
                                 Update Status

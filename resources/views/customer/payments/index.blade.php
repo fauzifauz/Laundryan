@@ -51,6 +51,27 @@
                         @endforeach
                     </div>
                 </div>
+
+                <!-- Method filter -->
+                <div class="flex-1">
+                    <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Method</span>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach([
+                            'all' => 'All Methods',
+                            'qris' => 'QRIS',
+                            'card_online' => 'Card/Online',
+                            'bank_transfer' => 'Bank Transfer'
+                        ] as $key => $label)
+                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['method' => $key])) }}" 
+                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
+                                {{ $method === $key 
+                                    ? 'bg-brand border-brand text-white shadow-sm' 
+                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                                {{ $label }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
             </div>
 
             <!-- Simple Payment totals statistics -->
@@ -111,9 +132,23 @@
                                     Rp {{ number_format($payment->amount, 0, ',', '.') }}
                                 </td>
                                 <td class="p-4">
-                                    <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-200 rounded-full">
-                                        {{ $payment->payment_method }}
-                                    </span>
+                                    @if($payment->payment_method === 'qris')
+                                        <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 rounded-full">
+                                            QRIS
+                                        </span>
+                                    @elseif($payment->payment_method === 'stripe')
+                                        <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-full">
+                                            CARD / ONLINE
+                                        </span>
+                                    @elseif(in_array($payment->payment_method, ['transfer', 'bank_transfer']))
+                                        <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 rounded-full">
+                                            BANK TRANSFER
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-gray-100 text-gray-700 border border-gray-200 rounded-full">
+                                            {{ strtoupper($payment->payment_method) }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="p-4">
                                     @if($payment->status === 'success')

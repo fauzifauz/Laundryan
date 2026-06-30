@@ -47,6 +47,20 @@
                 </div>
             </div>
 
+            <!-- Leaflet CSS -->
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+            <!-- Live Route Navigation Map -->
+            <div class="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-8 z-0">
+                <div class="p-8">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">map</span>
+                        Live Route Navigation Map
+                    </h3>
+                    <div id="tracking-map" class="w-full h-80 rounded-2xl border border-gray-100 shadow-inner z-0"></div>
+                </div>
+            </div>
+
             <!-- Action Card -->
             <div class="bg-blue-900 rounded-3xl shadow-xl p-8 text-white">
                 <h3 class="text-lg font-bold mb-6 flex items-center">
@@ -142,22 +156,147 @@
         </div>
     </div>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const orderId = {{ $order->id }};
             const currentUserId = {{ auth()->id() }};
 
-            // Real-time Chat Listener
+            // Scroll chat to bottom
+            const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
+            if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Map Setup
+            const isPickupFlow = {{ in_array($order->status, ['waiting_pickup', 'penjemputan', 'dijemput', 'diantar', 'sampai']) ? 'true' : 'false' }};
+            const destLat = isPickupFlow ? {{ $order->pickup_lat ?? -6.2000 }} : {{ $order->delivery_lat ?? -6.2000 }};
+            const destLng = isPickupFlow ? {{ $order->pickup_lng ?? 106.8166 }} : {{ $order->delivery_lng ?? 106.8166 }};
+
+            var map = L.map('tracking-map').setView([destLat, destLng], 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            const customerIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            const courierIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41]
+            });
+
+            var customerMarker = L.marker([destLat, destLng], { icon: customerIcon })
+                .addTo(map)
+                .bindPopup(isPickupFlow ? 'Customer Pickup Location' : 'Customer Delivery Location')
+                .openPopup();
+
+            var courierMarker = null;
+            var routeLine = null;
+
+            function updateRoute() {
+                if (customerMarker && courierMarker) {
+                    const latlngs = [
+                        customerMarker.getLatLng(),
+                        courierMarker.getLatLng()
+                    ];
+                    if (!routeLine) {
+                        routeLine = L.polyline(latlngs, { color: '#2563eb', weight: 4, dashArray: '8, 8', opacity: 0.8 }).addTo(map);
+                    } else {
+                        routeLine.setLatLngs(latlngs);
+                    }
+                }
+            }
+
+            function setCourierPosition(lat, lng) {
+                const newLatLng = new L.LatLng(lat, lng);
+                if (!courierMarker) {
+                    courierMarker = L.marker(newLatLng, { icon: courierIcon })
+                        .addTo(map)
+                        .bindPopup('Your Position')
+                        .openPopup();
+                } else {
+                    courierMarker.setLatLng(newLatLng);
+                }
+                updateRoute();
+            }
+
+            function setCustomerPosition(lat, lng) {
+                const newLatLng = new L.LatLng(lat, lng);
+                customerMarker.setLatLng(newLatLng);
+                updateRoute();
+            }
+
+            // Real-time Chat and Location Listener
             if (window.Echo) {
                 window.Echo.private(`order.${orderId}`)
                     .listen('MessageSent', (e) => {
                         console.log('New message received:', e.message);
                         appendMessage(e.message);
+                    })
+                    .listen('LocationUpdated', (e) => {
+                        const sender = e.location.user;
+                        if (sender && sender.role === 'pelanggan') {
+                            setCustomerPosition(e.location.latitude, e.location.longitude);
+                        }
                     });
             }
 
+            // Watch courier's own location to update locally & send to server
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        setCourierPosition(lat, lng);
+
+                        // Broadcast to server
+                        fetch('{{ route("kurir.location.update") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                latitude: lat,
+                                longitude: lng,
+                                order_id: orderId
+                            })
+                        });
+                    },
+                    (error) => console.error("Courier GPS Watch Error:", error),
+                    { enableHighAccuracy: true, maximumAge: 10000 }
+                );
+            }
+
+            // Poll customer & courier positions fallback (every 8 seconds)
+            function pollLocations() {
+                fetch(`/orders/${orderId}/locations`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.customer) {
+                            setCustomerPosition(data.customer.latitude, data.customer.longitude);
+                        }
+                        if (data.courier) {
+                            setCourierPosition(data.courier.latitude, data.courier.longitude);
+                        }
+                    })
+                    .catch(err => console.log('Polling error:', err));
+            }
+            setInterval(pollLocations, 8000);
+
             function appendMessage(msg) {
-                const chatContainer = document.querySelector('.flex-1.overflow-y-auto');
                 const isMine = msg.sender_id === currentUserId;
                 
                 const msgHtml = `
@@ -195,30 +334,6 @@
             } else {
                 preview.src = "";
             }
-        }
-
-        // Real-time Location Tracking update from Courier
-        if ("geolocation" in navigator) {
-            setInterval(() => {
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    fetch('{{ route("kurir.location.update") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify({
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude,
-                            order_id: '{{ $order->id }}'
-                        })
-                    });
-                }, (error) => {
-                    console.error("GPS Error:", error);
-                }, {
-                    enableHighAccuracy: true
-                });
-            }, 30000); // Every 30 seconds
         }
     </script>
 </x-app-layout>

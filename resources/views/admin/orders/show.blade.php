@@ -585,12 +585,61 @@
                                 <span
                                     class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment
                                     Method</span>
+                                @php
+                                    $method = $order->payment_method ?: ($order->latestPayment?->payment_method);
+                                    if ($method === 'qris') {
+                                        $methodLabel = 'QRIS';
+                                    } elseif ($method === 'stripe') {
+                                        $methodLabel = 'Card / Online (Stripe)';
+                                    } elseif (in_array($method, ['transfer', 'bank_transfer'])) {
+                                        $methodLabel = 'Bank Transfer';
+                                    } else {
+                                        $methodLabel = $method ? ucwords(str_replace('_', ' ', $method)) : 'Not Specified';
+                                    }
+                                @endphp
                                 <span class="text-xs font-black text-gray-800 block mt-1 uppercase">
-                                    {{ $order->payment_method ?: 'Not Specified' }}
+                                    {{ $methodLabel }}
                                 </span>
                             </div>
+                            @if($order->payment_status === 'paid')
+                                <div class="col-span-2 border-t border-gray-100 pt-2 mt-1">
+                                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment Completion Time</span>
+                                    @php
+                                        $paymentDate = $order->latestPayment && $order->latestPayment->status === 'success'
+                                            ? $order->latestPayment->payment_date
+                                            : null;
+                                        if (!$paymentDate && $order->updated_at) {
+                                            $paymentDate = $order->updated_at;
+                                        }
+                                    @endphp
+                                    <span class="text-xs font-bold text-gray-800 block mt-0.5">
+                                        {{ $paymentDate ? $paymentDate->timezone('Asia/Jakarta')->format('d M Y, H:i') . ' WIB' : '-' }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
                     </div>
+
+                    @if($order->payment_method === 'bank_transfer')
+                        @php
+                            $latestPayment = $order->payments->sortByDesc('created_at')->first();
+                        @endphp
+                        @if($latestPayment && $latestPayment->proof_path)
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 space-y-3">
+                                <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment Proof Receipt</span>
+                                <a href="{{ asset('storage/' . $latestPayment->proof_path) }}" target="_blank" class="block group relative w-full h-32 rounded-xl overflow-hidden border border-gray-200 bg-white hover:border-blue-400 transition-colors shadow-sm">
+                                    <img src="{{ asset('storage/' . $latestPayment->proof_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-black gap-1">
+                                        <span class="material-symbols-outlined text-sm">zoom_in</span> View Receipt
+                                    </div>
+                                </a>
+                            </div>
+                        @else
+                            <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 text-center py-6 text-gray-400 italic text-xs">
+                                No payment proof uploaded yet
+                            </div>
+                        @endif
+                    @endif
 
                     <!-- Card 7: Customer Profile (Aligned with Payment details) -->
                     @if($order->customer)

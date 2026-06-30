@@ -39,9 +39,19 @@ class PaymentController extends Controller
             $query->where('status', 'pending');
         }
 
+        // Filter by Payment Method
+        $method = $request->input('method', 'all');
+        if ($method === 'qris') {
+            $query->where('payment_method', 'qris');
+        } elseif ($method === 'card_online') {
+            $query->where('payment_method', 'stripe');
+        } elseif ($method === 'bank_transfer') {
+            $query->whereIn('payment_method', ['transfer', 'bank_transfer']);
+        }
+
         $payments = $query->latest('payment_date')->paginate(10)->withQueryString();
 
-        return view('customer.payments.index', compact('payments', 'period', 'status'));
+        return view('customer.payments.index', compact('payments', 'period', 'status', 'method'));
     }
 
     public function uploadProof(Request $request, Order $order)

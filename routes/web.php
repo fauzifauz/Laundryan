@@ -37,6 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/orders/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'show'])->name('orders.show');
         Route::get('/orders/{order}/invoice', [\App\Http\Controllers\Customer\OrderController::class, 'invoice'])->name('orders.invoice');
         Route::post('/orders/{order}/reviews', [\App\Http\Controllers\Customer\ReviewController::class, 'store'])->name('reviews.store');
+        Route::post('/location', [\App\Http\Controllers\Customer\OrderController::class, 'updateLocation'])->name('location.update');
         
         // Payments routes
         Route::get('/payments', [\App\Http\Controllers\Customer\PaymentController::class, 'index'])->name('payments.index');
@@ -200,6 +201,9 @@ Route::middleware('auth')->group(function () {
     
     // Chat messages
     Route::post('/orders/{order}/messages', [\App\Http\Controllers\MessageController::class, 'store'])->name('messages.store');
+
+    // Location polling data
+    Route::get('/orders/{order}/locations', [\App\Http\Controllers\Customer\OrderController::class, 'locations'])->name('orders.locations.data');
 });
 
 require __DIR__.'/auth.php';
