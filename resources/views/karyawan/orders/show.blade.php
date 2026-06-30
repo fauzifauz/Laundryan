@@ -581,6 +581,27 @@
                                 </span>
                             </div>
                         </div>
+
+                        @if($order->payment_method === 'bank_transfer')
+                            @php
+                                $latestPayment = $order->payments->sortByDesc('created_at')->first();
+                            @endphp
+                            @if($latestPayment && $latestPayment->proof_path)
+                                <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 space-y-3">
+                                    <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest block">Payment Proof Receipt</span>
+                                    <a href="{{ asset('storage/' . $latestPayment->proof_path) }}" target="_blank" class="block group relative w-full h-32 rounded-xl overflow-hidden border border-gray-200 bg-white hover:border-blue-400 transition-colors shadow-sm">
+                                        <img src="{{ asset('storage/' . $latestPayment->proof_path) }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-black gap-1">
+                                            <span class="material-symbols-outlined text-sm">zoom_in</span> View Receipt
+                                        </div>
+                                    </a>
+                                </div>
+                            @else
+                                <div class="bg-gray-50/50 border border-gray-100 rounded-2xl p-4 text-center py-6 text-gray-400 italic text-xs">
+                                    No payment proof uploaded yet
+                                </div>
+                            @endif
+                        @endif
                     </div>
 
                     <!-- Card 7: Customer Profile (Aligned with Payment details) -->

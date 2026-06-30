@@ -212,6 +212,10 @@
                         icon="shopping_bag">
                         My Laundry
                     </x-sidebar-link>
+                    <x-sidebar-link :href="route('customer.payments.index')" :active="request()->routeIs('customer.payments.*')"
+                        icon="payments">
+                        Payments
+                    </x-sidebar-link>
                 @endif
             </div>
         </nav>

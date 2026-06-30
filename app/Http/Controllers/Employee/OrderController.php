@@ -601,7 +601,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['customer', 'service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'statusLogs.user', 'review', 'messages.sender']);
+        $order->load(['customer', 'service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'statusLogs.user', 'review', 'messages.sender', 'payments']);
 
         $couriers = User::where('role', 'kurir')->where('status', 'active')->get();
         $qrCode = $this->generateQrCode(route('karyawan.orders.show', $order->id));

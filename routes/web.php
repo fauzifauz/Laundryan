@@ -38,6 +38,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/orders/{order}/invoice', [\App\Http\Controllers\Customer\OrderController::class, 'invoice'])->name('orders.invoice');
         Route::post('/orders/{order}/reviews', [\App\Http\Controllers\Customer\ReviewController::class, 'store'])->name('reviews.store');
         
+        // Payments routes
+        Route::get('/payments', [\App\Http\Controllers\Customer\PaymentController::class, 'index'])->name('payments.index');
+        Route::post('/payments/{order}/upload', [\App\Http\Controllers\Customer\PaymentController::class, 'uploadProof'])->name('payments.upload-proof');
+
+        // QRIS Simulation routes
+        Route::get('/orders/{order}/qris-simulation', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulation'])->name('payment.qris-simulation');
+        Route::post('/orders/{order}/qris-simulation/pay', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationPay'])->name('payment.qris-simulation.pay');
+
         // Payment callbacks
         Route::get('/payment/success/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'success'])->name('payment.success');
         Route::get('/payment/cancel/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'cancel'])->name('payment.cancel');

@@ -8,15 +8,54 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Service;
 use App\Models\ItemType;
+use App\Models\Payment;
 use Illuminate\Support\Str;
 use Stripe\Stripe;
 use Stripe\Checkout\Session;
+use Carbon\Carbon;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $orders = auth()->user()->customerOrders()->latest()->get();
+        $query = auth()->user()->customerOrders()->latest();
+
+        // Filter based on status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $status = $request->status;
+            if ($status === 'proses_pencucian') {
+                $query->whereIn('status', [
+                    'picking_up', 'picked_up', 'in_transit_to_laundry', 
+                    'arrived_at_laundry', 'washing', 'drying_ironing', 
+                    'ready_for_delivery', 'delivering', 'waiting_pickup'
+                ]);
+            } elseif ($status === 'setrika') {
+                $query->where('status', 'drying_ironing');
+            } elseif ($status === 'packing') {
+                $query->where('status', 'packing');
+            } elseif ($status === 'selesai') {
+                $query->where('status', 'completed');
+            } else {
+                $query->where('status', $status);
+            }
+        }
+
+        // Filter based on period
+        if ($request->filled('period') && $request->period !== 'all') {
+            $period = $request->period;
+            if ($period === 'harian') {
+                $query->whereDate('created_at', Carbon::today());
+            } elseif ($period === 'mingguan') {
+                $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            } elseif ($period === 'bulanan') {
+                $query->whereMonth('created_at', Carbon::now()->month)
+                      ->whereYear('created_at', Carbon::now()->year);
+            } elseif ($period === 'tahunan') {
+                $query->whereYear('created_at', Carbon::now()->year);
+            }
+        }
+
+        $orders = $query->get();
         return view('customer.orders.index', compact('orders'));
     }
 
@@ -35,7 +74,12 @@ class OrderController extends Controller
             'pickup_address' => 'required|string',
             'delivery_address' => 'required|string',
             'pickup_time' => 'required|date|after:now',
-            'notes' => 'nullable|string',
+            'soap' => 'required|string',
+            'fragrance' => 'required|string',
+            'payment_method' => 'required|in:stripe,bank_transfer,qris',
+            'notes_admin' => 'nullable|string',
+            'notes_employee' => 'nullable|string',
+            'notes_courier' => 'nullable|string',
         ]);
 
         $pricing = $this->getPricingDetails(
@@ -52,6 +96,19 @@ class OrderController extends Controller
         $service = Service::find($request->service_id);
         $itemType = ItemType::find($request->item_type_id);
 
+        // Consolidate notes for Admin, Karyawan, Kurir
+        $notesArray = [];
+        if ($request->filled('notes_admin')) {
+            $notesArray[] = 'Catatan Admin: ' . $request->notes_admin;
+        }
+        if ($request->filled('notes_employee')) {
+            $notesArray[] = 'Catatan Karyawan: ' . $request->notes_employee;
+        }
+        if ($request->filled('notes_courier')) {
+            $notesArray[] = 'Catatan Kurir: ' . $request->notes_courier;
+        }
+        $consolidatedNotes = implode("\n", $notesArray);
+
         $order = Order::create([
             'order_code' => 'ORD-' . strtoupper(Str::random(10)),
             'customer_id' => auth()->id(),
@@ -64,7 +121,7 @@ class OrderController extends Controller
             'delivery_lat' => $pricing['delivery_lat'],
             'delivery_lng' => $pricing['delivery_lng'],
             'pickup_time' => $request->pickup_time,
-            'notes' => $request->notes,
+            'notes' => $consolidatedNotes,
             'service_price' => $pricing['service_price'],
             'item_price' => $pricing['item_price'],
             'shipping_cost' => $pricing['shipping_cost'],
@@ -72,32 +129,85 @@ class OrderController extends Controller
             'total_price' => $pricing['total_price'],
             'status' => 'pending_payment',
             'payment_status' => 'pending',
+            'soap' => $request->soap,
+            'fragrance' => $request->fragrance,
+            'payment_method' => $request->payment_method,
         ]);
 
-        // Real Stripe Integration
-        Stripe::setApiKey(config('services.stripe.secret'));
+        if ($request->payment_method === 'stripe') {
+            try {
+                // Stripe Integration
+                Stripe::setApiKey(config('services.stripe.secret'));
 
-        $session = Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'idr',
-                    'product_data' => [
-                        'name' => 'Laundry Service: ' . $service->name . ' (' . $itemType->name . ')',
-                    ],
-                    'unit_amount' => (int)($pricing['total_price'] * 100),
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => route('payment.success', $order->id) . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('payment.cancel', $order->id),
-            'client_reference_id' => $order->id,
-        ]);
+                $session = Session::create([
+                    'payment_method_types' => ['card'],
+                    'line_items' => [[
+                        'price_data' => [
+                            'currency' => 'idr',
+                            'product_data' => [
+                                'name' => 'Laundry Service: ' . $service->name . ' (' . $itemType->name . ')',
+                            ],
+                            'unit_amount' => (int)($pricing['total_price'] * 100),
+                        ],
+                        'quantity' => 1,
+                    ]],
+                    'mode' => 'payment',
+                    'success_url' => route('customer.payment.success', $order->id) . '?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('customer.payment.cancel', $order->id),
+                    'client_reference_id' => $order->id,
+                ]);
 
-        $order->update(['stripe_session_id' => $session->id]);
+                $order->update(['stripe_session_id' => $session->id]);
 
-        return redirect($session->url);
+                // Create a Payment record
+                Payment::create([
+                    'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                    'order_id' => $order->id,
+                    'amount' => $order->total_price,
+                    'payment_method' => 'stripe',
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                ]);
+
+                return redirect($session->url);
+            } catch (\Exception $e) {
+                // If stripe fails (e.g. key is empty), fallback to bank transfer
+                Payment::create([
+                    'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                    'order_id' => $order->id,
+                    'amount' => $order->total_price,
+                    'payment_method' => 'transfer',
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                ]);
+                $order->update(['payment_method' => 'bank_transfer']);
+                return redirect()->route('customer.orders.show', $order->id)->with('warning', 'Online payment system is currently unavailable. Redirected to manual Bank Transfer.');
+            }
+        } elseif ($request->payment_method === 'qris') {
+            // QRIS Payment Method (Stripe QRIS Simulation)
+            Payment::create([
+                'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                'order_id' => $order->id,
+                'amount' => $order->total_price,
+                'payment_method' => 'qris',
+                'status' => 'pending',
+                'payment_date' => now(),
+            ]);
+
+            return redirect()->route('customer.orders.show', $order->id)->with('success', 'Laundry order successfully created. Please scan the QRIS code to perform payment simulation.');
+        } else {
+            // Manual Bank Transfer
+            Payment::create([
+                'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                'order_id' => $order->id,
+                'amount' => $order->total_price,
+                'payment_method' => 'transfer',
+                'status' => 'pending',
+                'payment_date' => now(),
+            ]);
+
+            return redirect()->route('customer.orders.show', $order->id)->with('success', 'Laundry order successfully created. Please complete bank transfer payment and upload your receipt.');
+        }
     }
 
     public function success(Request $request, Order $order)
@@ -109,6 +219,15 @@ class OrderController extends Controller
                 'status'         => 'waiting_pickup',
             ]);
 
+            // Update associated payment record to success
+            $payment = Payment::where('order_id', $order->id)->first();
+            if ($payment) {
+                $payment->update([
+                    'status' => 'success',
+                    'payment_date' => now(),
+                ]);
+            }
+
             // Automatically record as Income in Finance
             \App\Models\Finance::create([
                 'type'        => 'income',
@@ -119,12 +238,12 @@ class OrderController extends Controller
             ]);
         }
 
-        return redirect()->route('customer.dashboard')->with('success', 'Payment successful! Waiting for courier assignment.');
+        return redirect()->route('dashboard')->with('success', 'Payment successfully confirmed! Awaiting courier assignment.');
     }
 
     public function cancel(Order $order)
     {
-        return redirect()->route('customer.dashboard')->with('error', 'Payment cancelled.');
+        return redirect()->route('dashboard')->with('error', 'Stripe payment cancelled.');
     }
 
     public function show(Order $order)
