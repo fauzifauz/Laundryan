@@ -62,18 +62,26 @@ class TrackingDummySeeder extends Seeder
             ]
         );
 
-        Location::updateOrCreate(
-            ['user_id' => $courierA->id],
-            ['latitude' => -6.168000, 'longitude' => 106.565000, 'updated_at' => now()]
+        // 2. Courier A: STATUS "PENJEMPUTAN" (Menuju Lokasi Pelanggan)
+        $courierA = User::updateOrCreate(
+            ['email' => 'kurir.pickup@laundryan.com'],
+            [
+                'name' => 'Andi Kurir',
+                'phone' => '081211112222',
+                'role' => 'kurir',
+                'status' => 'active',
+                'password' => bcrypt('password'),
+            ]
         );
 
-        Order::updateOrCreate(
+        $orderA = Order::updateOrCreate(
             ['order_code' => 'TRX-00123'],
             [
                 'customer_id' => $customer1->id,
                 'service_id' => $service->id,
                 'item_type_id' => $itemType->id,
                 'courier_id' => $courierA->id,
+                'pickup_courier_id' => $courierA->id,
                 'pickup_address' => 'Jalan Merdeka No. 10',
                 'pickup_lat' => -6.175000,
                 'pickup_lng' => 106.575000,
@@ -91,6 +99,11 @@ class TrackingDummySeeder extends Seeder
             ]
         );
 
+        Location::updateOrCreate(
+            ['user_id' => $courierA->id, 'order_id' => $orderA->id],
+            ['latitude' => -6.168000, 'longitude' => 106.565000, 'updated_at' => now()]
+        );
+
         // 3. Courier B: STATUS "DIJEMPUT" (Barang Sudah Di Tangan Kurir)
         $courierB = User::updateOrCreate(
             ['email' => 'kurir.dijemput@laundryan.com'],
@@ -103,18 +116,14 @@ class TrackingDummySeeder extends Seeder
             ]
         );
 
-        Location::updateOrCreate(
-            ['user_id' => $courierB->id],
-            ['latitude' => -6.173000, 'longitude' => 106.573000, 'updated_at' => now()]
-        );
-
-        Order::updateOrCreate(
+        $orderB = Order::updateOrCreate(
             ['order_code' => 'TRX-00456'],
             [
                 'customer_id' => $customer2->id,
                 'service_id' => $service->id,
                 'item_type_id' => $itemType->id,
                 'courier_id' => $courierB->id,
+                'pickup_courier_id' => $courierB->id,
                 'pickup_address' => 'Perumahan Indah Blok C',
                 'pickup_lat' => -6.175000,
                 'pickup_lng' => 106.575000,
@@ -132,6 +141,11 @@ class TrackingDummySeeder extends Seeder
             ]
         );
 
+        Location::updateOrCreate(
+            ['user_id' => $courierB->id, 'order_id' => $orderB->id],
+            ['latitude' => -6.173000, 'longitude' => 106.573000, 'updated_at' => now()]
+        );
+
         // 4. Courier C: STATUS "PENGANTARAN" (Menuju Pelanggan)
         $courierC = User::updateOrCreate(
             ['email' => 'kurir.diantar@laundryan.com'],
@@ -144,18 +158,14 @@ class TrackingDummySeeder extends Seeder
             ]
         );
 
-        Location::updateOrCreate(
-            ['user_id' => $courierC->id],
-            ['latitude' => -6.170000, 'longitude' => 106.562000, 'updated_at' => now()]
-        );
-
-        Order::updateOrCreate(
+        $orderC = Order::updateOrCreate(
             ['order_code' => 'TRX-00789'],
             [
                 'customer_id' => $customer3->id,
                 'service_id' => $service->id,
                 'item_type_id' => $itemType->id,
                 'courier_id' => $courierC->id,
+                'delivery_courier_id' => $courierC->id,
                 'pickup_address' => 'Laundryan HQ',
                 'pickup_lat' => -6.1664983,
                 'pickup_lng' => 106.5602886,
@@ -171,6 +181,11 @@ class TrackingDummySeeder extends Seeder
                 'status' => 'pengantaran',
                 'payment_status' => 'paid',
             ]
+        );
+
+        Location::updateOrCreate(
+            ['user_id' => $courierC->id, 'order_id' => $orderC->id],
+            ['latitude' => -6.170000, 'longitude' => 106.562000, 'updated_at' => now()]
         );
 
         echo "Tracking dummy data seeded successfully!\n";

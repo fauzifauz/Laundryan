@@ -20,16 +20,32 @@ class PaymentController extends Controller
             $q->where('customer_id', $user->id);
         })->with(['order.service', 'order.itemType']);
 
+        // Calculate statistics based on unfiltered payments
+        $basePaymentQuery = Payment::whereHas('order', function ($q) use ($user) {
+            $q->where('customer_id', $user->id);
+        });
+
+        $stats = [
+            'total_count' => (clone $basePaymentQuery)->count(),
+            'success_count' => (clone $basePaymentQuery)->where('status', 'success')->count(),
+            'pending_count' => (clone $basePaymentQuery)->where('status', 'pending')->count(),
+            'today_count' => (clone $basePaymentQuery)->whereDate('payment_date', Carbon::today())->count(),
+            'month_count' => (clone $basePaymentQuery)->whereMonth('payment_date', Carbon::now()->month)->whereYear('payment_date', Carbon::now()->year)->count(),
+            'qris_count' => (clone $basePaymentQuery)->where('payment_method', 'qris')->count(),
+            'card_count' => (clone $basePaymentQuery)->where('payment_method', 'stripe')->count(),
+            'transfer_count' => (clone $basePaymentQuery)->whereIn('payment_method', ['transfer', 'bank_transfer'])->count(),
+        ];
+
         // Filter by Period
         $period = $request->input('period', 'all');
-        if ($period === 'harian') {
+        if ($period === 'harian' || $period === 'hari') {
             $query->whereDate('payment_date', Carbon::today());
-        } elseif ($period === 'mingguan') {
+        } elseif ($period === 'mingguan' || $period === 'minggu') {
             $query->whereBetween('payment_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
-        } elseif ($period === 'bulanan') {
+        } elseif ($period === 'bulanan' || $period === 'bulan') {
             $query->whereMonth('payment_date', Carbon::now()->month)
                   ->whereYear('payment_date', Carbon::now()->year);
-        } elseif ($period === 'tahunan') {
+        } elseif ($period === 'tahunan' || $period === 'tahun') {
             $query->whereYear('payment_date', Carbon::now()->year);
         }
 
@@ -53,7 +69,7 @@ class PaymentController extends Controller
 
         $payments = $query->latest('payment_date')->paginate(10)->withQueryString();
 
-        return view('customer.payments.index', compact('payments', 'period', 'status', 'method'));
+        return view('customer.payments.index', compact('payments', 'period', 'status', 'method', 'stats'));
     }
 
     public function uploadProof(Request $request, Order $order)
