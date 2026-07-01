@@ -17,6 +17,8 @@ return new class extends Migration
             $table->integer('rating')->nullable();
             $table->integer('rating_service')->nullable();
             $table->integer('rating_courier')->nullable();
+            $table->integer('rating_pickup_courier')->nullable();
+            $table->integer('rating_delivery_courier')->nullable();
             $table->text('comment')->nullable();
             $table->timestamps();
         });

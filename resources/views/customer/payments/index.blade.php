@@ -9,68 +9,162 @@
     <div class="py-2 space-y-6">
         <!-- Filter and Summary Overview card -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Period & Status filter container -->
-            <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-6">
-                <!-- Period filter -->
-                <div class="flex-1">
-                    <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Period</span>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach([
-                            'all' => 'All Time',
-                            'harian' => 'Daily',
-                            'bulanan' => 'Monthly',
-                            'tahunan' => 'Yearly'
-                        ] as $key => $label)
-                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['period' => $key])) }}" 
-                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
-                                {{ $period === $key 
-                                    ? 'bg-brand border-brand text-white shadow-sm' 
-                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
-                                {{ $label }}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
+            <!-- Icon-Dropdown Filter Container -->
+            <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-gray-100"
+                 x-data="{ openFilter: null }">
+                <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider mb-4">Filter Transactions</p>
+                <div class="flex flex-wrap gap-3">
 
-                <!-- Status filter -->
-                <div class="flex-1">
-                    <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Status</span>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach([
-                            'all' => 'All Status',
-                            'success' => 'Success Only',
-                            'pending' => 'Pending Only'
-                        ] as $key => $label)
-                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['status' => $key])) }}" 
-                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
-                                {{ $status === $key 
-                                    ? 'bg-brand border-brand text-white shadow-sm' 
-                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
-                                {{ $label }}
-                            </a>
-                        @endforeach
+                    <!-- Period Filter -->
+                    <div class="relative">
+                        <button type="button"
+                            @click="openFilter = (openFilter === 'period') ? null : 'period'"
+                            @keydown.escape.window="openFilter = null"
+                            class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition-all
+                                {{ $period !== 'all' ? 'bg-brand border-brand text-white shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                            <span class="material-symbols-outlined text-[16px]">calendar_month</span>
+                            <span>
+                                @php
+                                    $periodLabel = ['all' => 'All Time', 'harian' => 'Daily', 'mingguan' => 'Weekly', 'bulanan' => 'Monthly', 'tahunan' => 'Yearly'];
+                                @endphp
+                                {{ $periodLabel[$period] ?? 'All Time' }}
+                            </span>
+                            <span class="material-symbols-outlined text-[14px] transition-transform duration-200"
+                                  :class="openFilter === 'period' ? 'rotate-180' : ''">expand_more</span>
+                        </button>
+                        <div x-show="openFilter === 'period'"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             @click.outside="openFilter = null"
+                             class="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                             x-cloak>
+                            @foreach([
+                                'all'     => ['label' => 'All Time',  'icon' => 'all_inclusive'],
+                                'harian'  => ['label' => 'Daily',     'icon' => 'today'],
+                                'mingguan'=> ['label' => 'Weekly',    'icon' => 'date_range'],
+                                'bulanan' => ['label' => 'Monthly',   'icon' => 'calendar_month'],
+                                'tahunan' => ['label' => 'Yearly',    'icon' => 'event'],
+                            ] as $key => $opt)
+                                <a href="{{ route('customer.payments.index', array_merge(request()->except('page'), ['period' => $key])) }}"
+                                   @click="openFilter = null"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-bold transition-all
+                                       {{ $period === $key ? 'bg-brand/5 text-brand' : 'text-gray-600 hover:bg-gray-50' }}">
+                                    <span class="material-symbols-outlined text-[16px]">{{ $opt['icon'] }}</span>
+                                    {{ $opt['label'] }}
+                                    @if($period === $key)
+                                        <span class="material-symbols-outlined text-[14px] ml-auto">check</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
 
-                <!-- Method filter -->
-                <div class="flex-1">
-                    <span class="block text-xs font-black uppercase text-gray-400 tracking-wider mb-2">Filter by Method</span>
-                    <div class="flex flex-wrap gap-2">
-                        @foreach([
-                            'all' => 'All Methods',
-                            'qris' => 'QRIS',
-                            'card_online' => 'Card/Online',
-                            'bank_transfer' => 'Bank Transfer'
-                        ] as $key => $label)
-                            <a href="{{ route('customer.payments.index', array_merge(request()->all(), ['method' => $key])) }}" 
-                               class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all border block text-center
-                                {{ $method === $key 
-                                    ? 'bg-brand border-brand text-white shadow-sm' 
-                                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
-                                {{ $label }}
-                            </a>
-                        @endforeach
+                    <!-- Status Filter -->
+                    <div class="relative">
+                        <button type="button"
+                            @click="openFilter = (openFilter === 'status') ? null : 'status'"
+                            @keydown.escape.window="openFilter = null"
+                            class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition-all
+                                {{ $status !== 'all' ? 'bg-brand border-brand text-white shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                            <span class="material-symbols-outlined text-[16px]">filter_alt</span>
+                            <span>
+                                @php
+                                    $statusLabel = ['all' => 'All Status', 'success' => 'Success', 'pending' => 'Pending'];
+                                @endphp
+                                {{ $statusLabel[$status] ?? 'All Status' }}
+                            </span>
+                            <span class="material-symbols-outlined text-[14px] transition-transform duration-200"
+                                  :class="openFilter === 'status' ? 'rotate-180' : ''">expand_more</span>
+                        </button>
+                        <div x-show="openFilter === 'status'"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             @click.outside="openFilter = null"
+                             class="absolute left-0 top-full mt-2 w-44 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                             x-cloak>
+                            @foreach([
+                                'all'     => ['label' => 'All Status', 'icon' => 'rule'],
+                                'success' => ['label' => 'Success',    'icon' => 'check_circle'],
+                                'pending' => ['label' => 'Pending',    'icon' => 'schedule'],
+                            ] as $key => $opt)
+                                <a href="{{ route('customer.payments.index', array_merge(request()->except('page'), ['status' => $key])) }}"
+                                   @click="openFilter = null"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-bold transition-all
+                                       {{ $status === $key ? 'bg-brand/5 text-brand' : 'text-gray-600 hover:bg-gray-50' }}">
+                                    <span class="material-symbols-outlined text-[16px]">{{ $opt['icon'] }}</span>
+                                    {{ $opt['label'] }}
+                                    @if($status === $key)
+                                        <span class="material-symbols-outlined text-[14px] ml-auto">check</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
+
+                    <!-- Payment Method Filter -->
+                    <div class="relative">
+                        <button type="button"
+                            @click="openFilter = (openFilter === 'method') ? null : 'method'"
+                            @keydown.escape.window="openFilter = null"
+                            class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition-all
+                                {{ $method !== 'all' ? 'bg-brand border-brand text-white shadow-sm' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100' }}">
+                            <span class="material-symbols-outlined text-[16px]">payments</span>
+                            <span>
+                                @php
+                                    $methodLabel = ['all' => 'All Methods', 'qris' => 'QRIS', 'card_online' => 'Card / Online', 'bank_transfer' => 'Bank Transfer'];
+                                @endphp
+                                {{ $methodLabel[$method] ?? 'All Methods' }}
+                            </span>
+                            <span class="material-symbols-outlined text-[14px] transition-transform duration-200"
+                                  :class="openFilter === 'method' ? 'rotate-180' : ''">expand_more</span>
+                        </button>
+                        <div x-show="openFilter === 'method'"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 translate-y-1"
+                             @click.outside="openFilter = null"
+                             class="absolute left-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden py-1"
+                             x-cloak>
+                            @foreach([
+                                'all'          => ['label' => 'All Methods',   'icon' => 'credit_card'],
+                                'qris'         => ['label' => 'QRIS',          'icon' => 'qr_code_2'],
+                                'card_online'  => ['label' => 'Card / Online', 'icon' => 'contactless'],
+                                'bank_transfer'=> ['label' => 'Bank Transfer', 'icon' => 'account_balance'],
+                            ] as $key => $opt)
+                                <a href="{{ route('customer.payments.index', array_merge(request()->except('page'), ['method' => $key])) }}"
+                                   @click="openFilter = null"
+                                   class="flex items-center gap-3 px-4 py-2.5 text-xs font-bold transition-all
+                                       {{ $method === $key ? 'bg-brand/5 text-brand' : 'text-gray-600 hover:bg-gray-50' }}">
+                                    <span class="material-symbols-outlined text-[16px]">{{ $opt['icon'] }}</span>
+                                    {{ $opt['label'] }}
+                                    @if($method === $key)
+                                        <span class="material-symbols-outlined text-[14px] ml-auto">check</span>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Reset (shown only when a filter is active) -->
+                    @if($period !== 'all' || $status !== 'all' || $method !== 'all')
+                        <a href="{{ route('customer.payments.index') }}"
+                           class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all">
+                            <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                            Reset Filters
+                        </a>
+                    @endif
+
                 </div>
             </div>
 

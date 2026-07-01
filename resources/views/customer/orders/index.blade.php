@@ -65,7 +65,7 @@
                 </button>
             </div>
 
-            @if(request()->anyFilled(['status', 'search', 'courier_assigned', 'filter_period']))
+            @if(request()->anyFilled(['status', 'search', 'courier_assigned']) || (request()->filled('filter_period') && request('filter_period') !== 'all'))
                 <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-2xl flex justify-between items-center shadow-sm"
                     role="alert">
                     <div class="flex items-center gap-3">
@@ -81,8 +81,11 @@
                             @if(request()->input('courier_assigned') === 'unassigned')
                                 Courier: <span class="underline font-black">Unassigned</span>
                             @endif
-                            @if(request()->input('filter_period') === 'today')
-                                Period: <span class="underline font-black">Today</span>
+                            @if(request()->filled('filter_period') && request('filter_period') !== 'all')
+                                @php
+                                    $periodLabels = ['harian' => 'Daily', 'mingguan' => 'Weekly', 'bulanan' => 'Monthly', 'tahunan' => 'Yearly'];
+                                @endphp
+                                Period: <span class="underline font-black">{{ $periodLabels[request('filter_period')] ?? request('filter_period') }}</span>
                             @endif
                         </span>
                     </div>
@@ -203,7 +206,7 @@
                 <form action="{{ route('customer.orders.index') }}" method="GET"
                     class="grid grid-cols-1 md:grid-cols-12 gap-4">
                     <!-- Search query -->
-                    <div class="col-span-12 md:col-span-6">
+                    <div class="col-span-12 md:col-span-5">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Search Query</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
@@ -215,25 +218,48 @@
                         </div>
                     </div>
 
-                    <!-- Status select -->
+                    <!-- Order Status select -->
                     <div class="col-span-12 sm:col-span-6 md:col-span-3">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Order Status</label>
-                        <select name="status"
-                            class="w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3">
-                            <option value="all" {{ request('status') === 'all' || !request()->has('status') ? 'selected' : '' }}>All Statuses</option>
-                            <option value="active_processing" {{ request('status') === 'active_processing' ? 'selected' : '' }}>Active Processing</option>
-                            <option value="arrived_at_laundry" {{ request('status') === 'arrived_at_laundry' ? 'selected' : '' }}>Arrived at Laundry</option>
-                            <option value="washing" {{ request('status') === 'washing' ? 'selected' : '' }}>Washing</option>
-                            <option value="drying_ironing" {{ request('status') === 'drying_ironing' ? 'selected' : '' }}>Drying & Ironing</option>
-                            <option value="packing" {{ request('status') === 'packing' ? 'selected' : '' }}>Packing</option>
-                            <option value="ready_for_delivery" {{ request('status') === 'ready_for_delivery' ? 'selected' : '' }}>Ready for Delivery</option>
-                            <option value="delivering" {{ request('status') === 'delivering' ? 'selected' : '' }}>Delivering</option>
-                            <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-                        </select>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">package_2</span>
+                            </span>
+                            <select name="status"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
+                                <option value="all" {{ request('status') === 'all' || !request()->has('status') ? 'selected' : '' }}>All Statuses</option>
+                                <option value="active_processing" {{ request('status') === 'active_processing' ? 'selected' : '' }}>Active Processing</option>
+                                <option value="arrived_at_laundry" {{ request('status') === 'arrived_at_laundry' ? 'selected' : '' }}>Arrived at Laundry</option>
+                                <option value="washing" {{ request('status') === 'washing' ? 'selected' : '' }}>Washing</option>
+                                <option value="drying_ironing" {{ request('status') === 'drying_ironing' ? 'selected' : '' }}>Drying & Ironing</option>
+                                <option value="packing" {{ request('status') === 'packing' ? 'selected' : '' }}>Packing</option>
+                                <option value="ready_for_delivery" {{ request('status') === 'ready_for_delivery' ? 'selected' : '' }}>Ready for Delivery</option>
+                                <option value="delivering" {{ request('status') === 'delivering' ? 'selected' : '' }}>Delivering</option>
+                                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Period select -->
+                    <div class="col-span-12 sm:col-span-6 md:col-span-2">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Period</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">calendar_month</span>
+                            </span>
+                            <select name="filter_period"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
+                                <option value="all" {{ (request('filter_period', 'all')) === 'all' ? 'selected' : '' }}>All Time</option>
+                                <option value="harian" {{ request('filter_period') === 'harian' ? 'selected' : '' }}>Daily</option>
+                                <option value="mingguan" {{ request('filter_period') === 'mingguan' ? 'selected' : '' }}>Weekly</option>
+                                <option value="bulanan" {{ request('filter_period') === 'bulanan' ? 'selected' : '' }}>Monthly</option>
+                                <option value="tahunan" {{ request('filter_period') === 'tahunan' ? 'selected' : '' }}>Yearly</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Action buttons -->
-                    <div class="col-span-12 sm:col-span-6 md:col-span-3 flex items-end gap-2">
+                    <div class="col-span-12 sm:col-span-6 md:col-span-2 flex items-end gap-2">
                         <button type="submit"
                             class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-blue-200 uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all">
                             <span class="material-symbols-outlined text-[16px]">filter_alt</span> Filter

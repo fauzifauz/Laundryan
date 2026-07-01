@@ -66,9 +66,17 @@ class OrderController extends Controller
             })->whereNotIn('status', ['completed', 'cancelled']);
         }
 
-        // Filter period
-        if ($request->input('filter_period') === 'today') {
+        // Filter period (harian/mingguan/bulanan/tahunan → Daily/Weekly/Monthly/Yearly)
+        $filterPeriod = $request->input('filter_period', 'all');
+        if ($filterPeriod === 'harian') {
             $query->whereDate('created_at', Carbon::today());
+        } elseif ($filterPeriod === 'mingguan') {
+            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+        } elseif ($filterPeriod === 'bulanan') {
+            $query->whereMonth('created_at', Carbon::now()->month)
+                  ->whereYear('created_at', Carbon::now()->year);
+        } elseif ($filterPeriod === 'tahunan') {
+            $query->whereYear('created_at', Carbon::now()->year);
         }
 
         $orders = $query->paginate(10)->withQueryString();

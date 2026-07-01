@@ -24,6 +24,8 @@ class PaymentController extends Controller
         $period = $request->input('period', 'all');
         if ($period === 'harian') {
             $query->whereDate('payment_date', Carbon::today());
+        } elseif ($period === 'mingguan') {
+            $query->whereBetween('payment_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
         } elseif ($period === 'bulanan') {
             $query->whereMonth('payment_date', Carbon::now()->month)
                   ->whereYear('payment_date', Carbon::now()->year);
