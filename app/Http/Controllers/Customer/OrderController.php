@@ -283,9 +283,21 @@ class OrderController extends Controller
         
         $order->load(['service', 'itemType', 'courier', 'pickupCourier', 'deliveryCourier', 'photos.user', 'messages.sender', 'review', 'latestPayment', 'payments']);
         
-        $latestLocation = \App\Models\Location::where('order_id', $order->id)
-            ->latest()
-            ->first();
+        $courierId = null;
+        $pickupStatuses = ['pending_payment', 'waiting_pickup', 'picking_up', 'picked_up', 'in_transit_to_laundry', 'arrived_at_laundry', 'penjemputan', 'dijemput', 'diantar', 'sampai'];
+        if (in_array($order->status, $pickupStatuses)) {
+            $courierId = $order->pickup_courier_id ?? $order->courier_id;
+        } else {
+            $courierId = $order->delivery_courier_id ?? $order->courier_id;
+        }
+
+        $latestLocation = null;
+        if ($courierId) {
+            $latestLocation = \App\Models\Location::where('user_id', $courierId)
+                ->where('order_id', $order->id)
+                ->latest()
+                ->first();
+        }
 
         if (request()->ajax()) {
             return response()->json([

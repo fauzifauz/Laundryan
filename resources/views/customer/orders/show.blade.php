@@ -63,6 +63,7 @@
 
     <!-- Map & Photo CDN resources -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
     <div class="py-2 space-y-8">
         <!-- Review Block (If completed and no review yet) -->
@@ -342,6 +343,72 @@
 
                 {{-- Full-width: Photo Documentation --}}
                 @include('partials.order-photo-documentation', ['order' => $order])
+
+                <!-- Live Chat & Status Logs side-by-side -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Live Chat Area -->
+                    <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[400px] overflow-hidden text-left">
+                        <h3 class="text-base font-black text-gray-900 pb-4 border-b border-gray-50 flex items-center gap-2 shrink-0">
+                            <span class="material-symbols-outlined text-brand">forum</span>
+                            Staff Live Chat
+                        </h3>
+                        <div class="flex-1 overflow-y-auto space-y-3 my-4 pr-2 custom-scrollbar" id="chat-scroller">
+                            @forelse($order->messages as $msg)
+                                <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
+                                    <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
+                                        @php
+                                            $roleColors = match($msg->sender->role) {
+                                                'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                                'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                                'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
+                                                default => 'bg-blue-100 text-blue-700 border-blue-200',
+                                            };
+                                            $isMine = $msg->sender_id === auth()->id();
+                                        @endphp
+                                        <p class="text-[9px] mb-1 font-black flex items-center gap-1">
+                                            <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
+                                            <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
+                                                {{ $msg->sender->role }}
+                                            </span>
+                                        </p>
+                                        <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
+                                    </div>
+                                    <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
+                                </div>
+                            @empty
+                                <p class="text-center text-gray-400 py-8 italic text-xs">No messages yet. Ask anything about your order!</p>
+                            @endforelse
+                        </div>
+                        <form action="{{ route('messages.store', $order->id) }}" method="POST" class="mt-auto relative shrink-0">
+                            @csrf
+                            <input type="text" name="message" class="w-full rounded-2xl border-gray-200 pr-12 focus:border-brand focus:ring-brand py-3 text-xs" placeholder="Type a message..." required autocomplete="off">
+                            <button type="submit" class="absolute right-2 top-2 p-1.5 text-brand hover:text-blue-800 transition-colors">
+                                <span class="material-symbols-outlined">send</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Status Logs -->
+                    <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[400px] overflow-hidden text-left">
+                        <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4 shrink-0">Status Logs</h3>
+                        <div class="flex-1 overflow-y-auto pl-6 border-l-2 border-gray-100 space-y-6 my-4 pr-2 custom-scrollbar">
+                            @forelse($order->statusLogs as $log)
+                                <div class="relative">
+                                    <!-- Dot indicator on line -->
+                                    <span class="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-brand ring-4 ring-blue-50"></span>
+                                    <p class="text-xs font-black text-gray-800">
+                                        {{ str_replace('_', ' ', ucfirst($log->status)) }}
+                                    </p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5">
+                                        {{ $log->created_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+                                    </p>
+                                </div>
+                            @empty
+                                <p class="text-xs text-gray-400 italic">No status log updates yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Column right: Sidebar details (1/3 width) -->
@@ -557,74 +624,13 @@
                     </div>
                 </div>
 
-                <!-- Vertical tracking logs timeline -->
-                <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 space-y-6">
-                    <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4">Status Logs</h3>
-                    <div class="relative pl-6 border-l-2 border-gray-100 space-y-6">
-                        @forelse($order->statusLogs as $log)
-                            <div class="relative">
-                                <!-- Dot indicator on line -->
-                                <span class="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-brand ring-4 ring-blue-50"></span>
-                                <p class="text-xs font-black text-gray-800">
-                                    {{ str_replace('_', ' ', ucfirst($log->status)) }}
-                                </p>
-                                <p class="text-[10px] text-gray-400 mt-0.5">
-                                    {{ $log->created_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
-                                </p>
-                            </div>
-                        @empty
-                            <p class="text-xs text-gray-400 italic">No status log updates yet.</p>
-                        @endforelse
-                    </div>
-                </div>
-
-                <!-- Live Chat Area -->
-                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[400px]">
-                    <h3 class="text-base font-black text-gray-900 pb-4 border-b border-gray-50 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-brand">forum</span>
-                        Staff Live Chat
-                    </h3>
-                    <div class="flex-1 overflow-y-auto space-y-3 my-4 pr-2 custom-scrollbar" id="chat-scroller">
-                        @forelse($order->messages as $msg)
-                            <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                                <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
-                                    @php
-                                        $roleColors = match($msg->sender->role) {
-                                            'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
-                                            'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                            'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                            default => 'bg-blue-100 text-blue-700 border-blue-200',
-                                        };
-                                        $isMine = $msg->sender_id === auth()->id();
-                                    @endphp
-                                    <p class="text-[9px] mb-1 font-black flex items-center gap-1">
-                                        <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
-                                        <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
-                                            {{ $msg->sender->role }}
-                                        </span>
-                                    </p>
-                                    <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
-                                </div>
-                                <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
-                            </div>
-                        @empty
-                            <p class="text-center text-gray-400 py-8 italic text-xs">No messages yet. Ask anything about your order!</p>
-                        @endforelse
-                    </div>
-                    <form action="{{ route('messages.store', $order->id) }}" method="POST" class="mt-auto relative">
-                        @csrf
-                        <input type="text" name="message" class="w-full rounded-2xl border-gray-200 pr-12 focus:border-brand focus:ring-brand py-3 text-xs" placeholder="Type a message..." required autocomplete="off">
-                        <button type="submit" class="absolute right-2 top-2 p-1.5 text-brand hover:text-blue-800 transition-colors">
-                            <span class="material-symbols-outlined">send</span>
-                        </button>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Scroll chat to bottom
@@ -634,55 +640,173 @@
             const orderId = {{ $order->id }};
             const currentUserId = {{ auth()->id() }};
 
-            // Map Setup
-            const isPickupFlow = {{ in_array($order->status, ['waiting_pickup', 'picking_up', 'picked_up', 'in_transit_to_laundry', 'penjemputan', 'dijemput', 'diantar', 'sampai']) ? 'true' : 'false' }};
-            const destLat = isPickupFlow ? {{ $order->pickup_lat ?? -6.2000 }} : {{ $order->delivery_lat ?? -6.2000 }};
-            const destLng = isPickupFlow ? {{ $order->pickup_lng ?? 106.8166 }} : {{ $order->delivery_lng ?? 106.8166 }};
+            // Let's define locations
+            const laundryLat = -6.1664983;
+            const laundryLng = 106.5602886;
 
-            var map = L.map('tracking-map').setView([destLat, destLng], 14);
+            let pickupLat = {{ $order->pickup_lat ?? -6.2000 }};
+            let pickupLng = {{ $order->pickup_lng ?? 106.8166 }};
+            let deliveryLat = {{ $order->delivery_lat ?? -6.2000 }};
+            let deliveryLng = {{ $order->delivery_lng ?? 106.8166 }};
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            const orderStatus = '{{ $order->status }}';
 
-            // Custom markers
-            const customerIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
+            const isPickupFlow = ['waiting_pickup', 'picking_up', 'penjemputan'].includes(orderStatus);
+            const isTransitFlow = ['picked_up', 'dijemput', 'in_transit_to_laundry', 'diantar'].includes(orderStatus);
+            const isDeliveryFlow = ['delivering', 'pengantaran'].includes(orderStatus);
+
+            // Determine default map center
+            let centerLat = isPickupFlow ? pickupLat : (isDeliveryFlow ? deliveryLat : laundryLat);
+            let centerLng = isPickupFlow ? pickupLng : (isDeliveryFlow ? deliveryLng : laundryLng);
+
+            var map = L.map('tracking-map', { 
+                zoomControl: false, 
+                attributionControl: false 
+            }).setView([centerLat, centerLng], 14);
+
+            L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            const standardMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd', maxZoom: 20
+            });
+            const darkMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd', maxZoom: 20
+            });
+            const satelliteMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19
             });
 
-            const courierIcon = L.icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
+            standardMap.addTo(map);
+
+            L.control.layers({ 
+                "Standard": standardMap, 
+                "Dark Mode": darkMap, 
+                "Satellite": satelliteMap 
+            }, null, { position: 'bottomleft' }).addTo(map);
+
+            // Custom markers definitions from Admin Theme
+            const customerName = '{{ $order->customer->name ?? "Customer" }}';
+            const customerPhoto = '{{ ($order->customer && $order->customer->photo) ? asset("storage/" . $order->customer->photo) : "" }}' || `https://ui-avatars.com/api/?name=${encodeURIComponent(customerName)}&color=005bc0&background=EBF4FF`;
+            
+            const customerIcon = L.divIcon({
+                html: `
+                <div class="relative h-12 w-12 flex items-center justify-center">
+                    <!-- Customer Photo Frame -->
+                    <div class="bg-white p-0.5 h-11 w-11 rounded-full border-4 border-${isPickupFlow ? 'amber' : 'emerald'}-500 flex items-center justify-center shadow-2xl animate-pulse overflow-hidden z-10">
+                        <img src="${customerPhoto}" class="w-full h-full rounded-full object-cover">
+                    </div>
+                    
+                    <!-- Label -->
+                    <div class="absolute -bottom-2 bg-${isPickupFlow ? 'amber' : 'emerald'}-500 text-white text-[7px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-md z-30">
+                        TARGET
+                    </div>
+                </div>`,
+                className: '', iconSize: [48, 48], iconAnchor: [24, 48], popupAnchor: [0, -48]
             });
 
-            // Create markers
-            var customerMarker = L.marker([destLat, destLng], { icon: customerIcon })
-                .addTo(map)
-                .bindPopup(isPickupFlow ? 'Pickup Destination (Your Home)' : 'Delivery Destination (Your Home)')
-                .openPopup();
+            const courierName = '{{ $order->courier->name ?? "Courier" }}';
+            const courierPhoto = '{{ ($order->courier && $order->courier->photo) ? asset("storage/" . $order->courier->photo) : "" }}' || `https://ui-avatars.com/api/?name=${encodeURIComponent(courierName)}&color=005bc0&background=EBF4FF`;
+            const activeType = isPickupFlow ? 'pickup' : (isDeliveryFlow ? 'delivery' : 'idle');
+            const hasOrder = activeType === 'pickup' || activeType === 'delivery';
+            
+            const courierIcon = L.divIcon({
+                html: `
+                <div class="courier-marker ${activeType} overflow-visible">
+                    <div class="w-full h-full rounded-full overflow-hidden border-2 border-white shadow-inner bg-white">
+                        <img src="${courierPhoto}" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(courierName)}&color=005bc0&background=EBF4FF'">
+                    </div>
+                    ${hasOrder ? '<div class="absolute -top-1 -right-1 bg-white text-blue-600 rounded-full h-5 w-5 flex items-center justify-center shadow-lg border border-blue-50 animate-bounce z-10"><span class="material-symbols-outlined text-[12px] font-black">inventory_2</span></div>' : ''}
+                </div>`,
+                className: '', iconSize: [44, 44], iconAnchor: [22, 44], popupAnchor: [0, -44]
+            });
 
+            const laundryIcon = L.divIcon({
+                html: `<div class="bg-blue-900 text-white h-12 w-12 rounded-full flex items-center justify-center shadow-2xl border-4 border-white animate-pulse"><span class="material-symbols-outlined text-2xl">local_laundry_service</span></div>`,
+                className: '', iconSize: [48, 48], iconAnchor: [24, 24], popupAnchor: [0, -24]
+            });
+
+            // Put static markers on map based on status
+            var customerMarker = null;
+            var laundryMarker = null;
             var courierMarker = null;
-            var routeLine = null;
+            var routingControl = null;
 
-            function updateRoute() {
-                if (customerMarker && courierMarker) {
-                    const latlngs = [
-                        customerMarker.getLatLng(),
-                        courierMarker.getLatLng()
+            if (isPickupFlow) {
+                // Show customer marker (blue/amber) at pickup location
+                customerMarker = L.marker([pickupLat, pickupLng], { icon: customerIcon })
+                    .addTo(map)
+                    .bindPopup('Pickup Location (Your Home)')
+                    .openPopup();
+            } else if (isTransitFlow) {
+                // Show laundry marker and customer marker
+                laundryMarker = L.marker([laundryLat, laundryLng], { icon: laundryIcon })
+                    .addTo(map)
+                    .bindPopup('<div class="p-2 font-black text-center text-blue-900">LAUNDRYAN HQ<br><span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Base Operations</span></div>')
+                    .openPopup();
+
+                customerMarker = L.marker([pickupLat, pickupLng], { icon: customerIcon })
+                    .addTo(map)
+                    .bindPopup('Pickup Location (Your Home)');
+            } else if (isDeliveryFlow) {
+                // Show laundry marker and customer marker at delivery location
+                laundryMarker = L.marker([laundryLat, laundryLng], { icon: laundryIcon })
+                    .addTo(map)
+                    .bindPopup('<div class="p-2 font-black text-center text-blue-900">LAUNDRYAN HQ<br><span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Base Operations</span></div>')
+                    .openPopup();
+
+                customerMarker = L.marker([deliveryLat, deliveryLng], { icon: customerIcon })
+                    .addTo(map)
+                    .bindPopup('Delivery Location (Your Home)');
+            } else {
+                // Fallback: just show customer delivery location
+                customerMarker = L.marker([deliveryLat, deliveryLng], { icon: customerIcon })
+                    .addTo(map)
+                    .bindPopup('Your Home')
+                    .openPopup();
+            }
+
+            function updateRoute(courierLat, courierLng) {
+                let waypoints = [];
+                let color = '#005bc0'; // Default brand color
+
+                if (isPickupFlow && courierLat && courierLng) {
+                    // Route from courier to customer home
+                    waypoints = [
+                        L.latLng(courierLat, courierLng),
+                        L.latLng(pickupLat, pickupLng)
                     ];
-                    if (!routeLine) {
-                        routeLine = L.polyline(latlngs, { color: '#005bc0', weight: 4, dashArray: '8, 8', opacity: 0.8 }).addTo(map);
+                    color = '#f59e0b'; // Amber for pickup
+                } else if (isTransitFlow && courierLat && courierLng) {
+                    // Route from courier to laundry HQ
+                    waypoints = [
+                        L.latLng(courierLat, courierLng),
+                        L.latLng(laundryLat, laundryLng)
+                    ];
+                    color = '#8b5cf6'; // Purple for transit
+                } else if (isDeliveryFlow) {
+                    // Route from laundry HQ to customer home (always displayed, even without courier coordinates)
+                    waypoints = [
+                        L.latLng(laundryLat, laundryLng),
+                        L.latLng(deliveryLat, deliveryLng)
+                    ];
+                    color = '#10b981'; // Green for delivery
+                }
+
+                if (waypoints.length >= 2) {
+                    if (!routingControl) {
+                        routingControl = L.Routing.control({
+                            waypoints: waypoints,
+                            createMarker: function() { return null; }, // We handle markers ourselves
+                            routeWhileDragging: false,
+                            show: false,
+                            fitSelectedRoutes: false,
+                            lineOptions: {
+                                styles: [{ color: color, opacity: 0.8, weight: 6 }]
+                            }
+                        }).addTo(map);
                     } else {
-                        routeLine.setLatLngs(latlngs);
+                        // Dynamically update waypoints
+                        routingControl.setWaypoints(waypoints);
                     }
                 }
             }
@@ -697,21 +821,49 @@
                 } else {
                     courierMarker.setLatLng(newLatLng);
                 }
-                updateRoute();
-                // Fit bounds to show both
-                const group = new L.featureGroup([customerMarker, courierMarker]);
-                map.fitBounds(group.getBounds().pad(0.15));
+
+                // Update the routing path based on current courier position
+                updateRoute(lat, lng);
+
+                // Fit bounds to show all active markers
+                const activeMarkers = [];
+                if (customerMarker) activeMarkers.push(customerMarker);
+                if (laundryMarker) activeMarkers.push(laundryMarker);
+                if (courierMarker) activeMarkers.push(courierMarker);
+                
+                if (activeMarkers.length > 0) {
+                    const group = new L.featureGroup(activeMarkers);
+                    map.fitBounds(group.getBounds().pad(0.15));
+                }
             }
 
             function setCustomerPosition(lat, lng) {
-                const newLatLng = new L.LatLng(lat, lng);
-                customerMarker.setLatLng(newLatLng);
-                updateRoute();
+                if (customerMarker) {
+                    customerMarker.setLatLng(new L.LatLng(lat, lng));
+                }
+                if (isPickupFlow) {
+                    pickupLat = lat;
+                    pickupLng = lng;
+                } else if (isDeliveryFlow) {
+                    deliveryLat = lat;
+                    deliveryLng = lng;
+                }
+                
+                // Refresh route with new customer location
+                if (courierMarker) {
+                    updateRoute(courierMarker.getLatLng().lat, courierMarker.getLatLng().lng);
+                } else if (isDeliveryFlow) {
+                    updateRoute();
+                }
             }
 
             // Set initial courier position if loaded
             @if($latestLocation)
                 setCourierPosition({{ $latestLocation->latitude }}, {{ $latestLocation->longitude }});
+            @else
+                if (isDeliveryFlow) {
+                    updateRoute();
+                }
             @endif
 
             // Watch customer's real position and report to server
@@ -719,7 +871,6 @@
                 'penjemputan', 'dijemput', 'diantar', 'sampai',
                 'pengantaran', 'diantarkan', 'delivering', 'picking_up'
             ];
-            const orderStatus = '{{ $order->status }}';
 
             if (activeTrackingStatuses.includes(orderStatus) && navigator.geolocation) {
                 navigator.geolocation.watchPosition(
@@ -841,5 +992,33 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        .leaflet-routing-container { display: none !important; }
+
+        /* Courier Markers from Admin Theme */
+        .courier-marker {
+            width: 44px !important;
+            height: 44px !important;
+            background: #3b82f6;
+            border: 3px solid #fff;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 14px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        .courier-marker > div {
+            transform: rotate(45deg);
+            text-transform: uppercase;
+        }
+        .courier-marker.pickup { background: #F59E0B !important; }
+        .courier-marker.delivery { background: #10B981 !important; }
+        .courier-marker.idle { background: #3B82F6 !important; }
+        .courier-marker.offline { background: #64748B !important; filter: grayscale(0.5); }
+        .courier-marker:hover { transform: rotate(-45deg) scale(1.1); z-index: 1001 !important; }
     </style>
 </x-app-layout>
