@@ -5,7 +5,7 @@
                 Task Detail: {{ $order->order_code }}
             </h2>
             <span class="bg-blue-600 text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
-                {{ str_replace('_', ' ', strtoupper($order->status)) }}
+                {{ $statusLabel }}
             </span>
         </div>
     </x-slot>
@@ -64,61 +64,196 @@
             <!-- Action Card -->
             <div class="bg-blue-900 rounded-3xl shadow-xl p-8 text-white">
                 <h3 class="text-lg font-bold mb-6 flex items-center">
-                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                    Update Progress
-                </h3>
+                    <svg
+                    class="w-6 h-6 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+            >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+            ></path>
+        </svg>
 
-                <form action="{{ route('kurir.orders.status', $order->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                    @csrf
-                    
-                    <div>
-                        <label class="block text-xs font-black uppercase tracking-widest opacity-70 mb-3">Next Status</label>
-                        <select name="status" class="w-full bg-white/10 border-white/20 rounded-xl text-white py-3 focus:ring-white focus:border-white transition-all appearance-none" required>
-                            @php
-                                $pickupStatuses = ['penjemputan', 'dijemput', 'diantar', 'sampai'];
-                                $deliveryStatuses = ['pengantaran', 'diantarkan', 'selesai'];
-                                
-                                // Simple logic to determine which flow we are in
-                                $isPickupFlow = in_array($order->status, ['waiting_pickup', 'penjemputan', 'dijemput', 'diantar', 'sampai']) || !$order->status;
-                            @endphp
+        Update Progress
+    </h3>
 
-                            @if($isPickupFlow)
-                                <option class="text-black" value="penjemputan" {{ $order->status === 'penjemputan' ? 'selected' : '' }}>Pickup (Heading to Customer)</option>
-                                <option class="text-black" value="dijemput" {{ $order->status === 'dijemput' ? 'selected' : '' }}>Picked Up (Items collected)</option>
-                                <option class="text-black" value="diantar" {{ $order->status === 'diantar' ? 'selected' : '' }}>In Transit (Heading to Laundry)</option>
-                                <option class="text-black" value="sampai" {{ $order->status === 'sampai' ? 'selected' : '' }}>Arrived (At Laundry Facility)</option>
-                            @else
-                                <option class="text-black" value="pengantaran" {{ $order->status === 'pengantaran' ? 'selected' : '' }}>Delivery (Heading to Customer)</option>
-                                <option class="text-black" value="diantarkan" {{ $order->status === 'diantarkan' ? 'selected' : '' }}>Delivered (Arrived at destination)</option>
-                                <option class="text-black" value="selesai" {{ $order->status === 'selesai' ? 'selected' : '' }}>Completed (Task Finished)</option>
-                            @endif
-                            
-                            @if(in_array($order->status, ['ready_for_delivery']))
-                                <option class="text-black" value="pengantaran">Start Delivery</option>
-                            @endif
-                        </select>
-                    </div>
+    @if(session('success'))
+        <div class="mb-6 rounded-xl border border-green-300 bg-green-100 p-4 text-sm font-semibold text-green-800">
+            {{ session('success') }}
+        </div>
+    @endif
 
-                    <!-- Photo Upload -->
-                    <div id="photo-upload-section">
-                        <label class="block text-xs font-black uppercase tracking-widest opacity-70 mb-3">Upload Proof Photo (Optional/Required at handover)</label>
-                        <div class="relative group">
-                            <input type="file" name="photo" id="photo" class="hidden" accept="image/*" onchange="previewFile()">
-                            <label for="photo" class="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/30 rounded-2xl cursor-pointer hover:border-white/60 transition-all bg-white/5 group-hover:bg-white/10">
-                                <svg class="w-10 h-10 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
-                                <span class="text-sm font-bold opacity-70 group-hover:opacity-100" id="file-label">Tap to take/select photo</span>
-                            </label>
-                            <img id="preview" class="hidden mt-4 w-full h-auto rounded-xl border border-white/20">
-                        </div>
-                    </div>
+    @if($errors->any())
+        <div class="mb-6 rounded-xl border border-red-300 bg-red-100 p-4 text-red-800">
+            <ul class="list-disc space-y-1 pl-5 text-sm font-semibold">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-                    <div class="pt-4">
-                        <button type="submit" class="w-full bg-white text-blue-900 font-black py-4 rounded-xl text-lg hover:bg-blue-50 transition-all shadow-xl active:scale-[0.98]">
-                            Submit Update
-                        </button>
-                    </div>
-                </form>
+    @if($canUpdateStatus && $nextStatus)
+        <form
+            action="{{ route('kurir.orders.status', $order->id) }}"
+            method="POST"
+            enctype="multipart/form-data"
+            class="space-y-6"
+        >
+            @csrf
+
+            <input
+                type="hidden"
+                name="status"
+                value="{{ $nextStatus }}"
+            >
+
+            <div>
+                <p class="mb-3 text-xs font-black uppercase tracking-widest opacity-70">
+                    Status Sekarang
+                </p>
+
+                <div class="rounded-xl border border-white/20 bg-white/10 p-4">
+                    <p class="font-bold">
+                        {{ $statusLabel }}
+                    </p>
+                </div>
             </div>
+
+            <div>
+                <p class="mb-3 text-xs font-black uppercase tracking-widest opacity-70">
+                    Status Berikutnya
+                </p>
+
+                <div class="rounded-xl border border-white/30 bg-white/15 p-4">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined">
+                            arrow_forward
+                        </span>
+
+                        <p class="font-black">
+                            {{ $nextStatusLabel }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="photo-upload-section">
+                <label
+                    for="photo"
+                    class="mb-3 block text-xs font-black uppercase tracking-widest opacity-70"
+                >
+                    Foto Bukti
+
+                    @if($photoRequired)
+                        <span class="text-yellow-300">
+                            — Wajib
+                        </span>
+                    @else
+                        <span class="opacity-70">
+                            — Opsional
+                        </span>
+                    @endif
+                </label>
+
+                @if($photoRequired)
+                    <p class="mb-3 text-xs text-blue-100">
+                        Foto wajib diunggah sebagai bukti
+                        {{ $nextStatus === 'picked_up'
+                            ? 'laundry telah diambil dari pelanggan.'
+                            : 'laundry telah diterima pelanggan.' }}
+                    </p>
+                @endif
+
+                <div class="relative group">
+                    <input
+                        type="file"
+                        name="photo"
+                        id="photo"
+                        class="hidden"
+                        accept="image/jpeg,image/png,image/webp"
+                        onchange="previewFile()"
+                        @required($photoRequired)
+                    >
+
+                    <label
+                        for="photo"
+                        class="flex w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/30 bg-white/5 p-8 transition-all hover:border-white/60 hover:bg-white/10"
+                    >
+                        <svg
+                            class="mb-2 h-10 w-10 opacity-60"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                            ></path>
+                        </svg>
+
+                        <span
+                            id="file-label"
+                            class="text-sm font-bold opacity-80"
+                        >
+                            Pilih atau ambil foto
+                        </span>
+                    </label>
+
+                    <img
+                        id="preview"
+                        alt="Preview foto bukti"
+                        class="mt-4 hidden max-h-96 w-full rounded-xl border border-white/20 object-contain"
+                    >
+                </div>
+            </div>
+
+            <div class="pt-4">
+                <button
+                    type="submit"
+                    class="w-full rounded-xl bg-white py-4 text-lg font-black text-blue-900 shadow-xl transition-all hover:bg-blue-50 active:scale-[0.98]"
+                >
+                    Ubah ke {{ $nextStatusLabel }}
+                </button>
+            </div>
+        </form>
+    @elseif($nextStatus)
+        <div class="rounded-2xl border border-yellow-300/40 bg-yellow-100/10 p-6 text-center">
+            <span class="material-symbols-outlined mb-2 text-4xl text-yellow-300">
+                assignment_ind
+            </span>
+
+            <p class="font-bold">
+                Tahap ini ditugaskan kepada kurir lain.
+            </p>
+
+            <p class="mt-2 text-sm text-blue-100">
+                Lu tetap bisa melihat detail order, tetapi tidak bisa mengubah statusnya.
+            </p>
+        </div>
+    @else
+        <div class="rounded-2xl border border-green-300/40 bg-green-100/10 p-6 text-center">
+            <span class="material-symbols-outlined mb-2 text-4xl text-green-300">
+                task_alt
+            </span>
+
+            <p class="font-bold">
+                Tidak ada proses kurir berikutnya.
+            </p>
+
+            <p class="mt-2 text-sm text-blue-100">
+                Order sedang menunggu proses dari admin atau karyawan.
+            </p>
+        </div>
+    @endif
+</div>
+            
 
             <!-- Chat Section (Cross-role) -->
             <div class="mt-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100 flex flex-col h-[500px]">
@@ -169,9 +304,9 @@
             if (chatContainer) chatContainer.scrollTop = chatContainer.scrollHeight;
 
             // Map Setup
-            const isPickupFlow = {{ in_array($order->status, ['waiting_pickup', 'penjemputan', 'dijemput', 'diantar', 'sampai']) ? 'true' : 'false' }};
-            const destLat = isPickupFlow ? {{ $order->pickup_lat ?? -6.2000 }} : {{ $order->delivery_lat ?? -6.2000 }};
-            const destLng = isPickupFlow ? {{ $order->pickup_lng ?? 106.8166 }} : {{ $order->delivery_lng ?? 106.8166 }};
+            const isPickupFlow = {{ $isPickupFlow ? 'true' : 'false' }};
+            const destLat = {{ $destinationLatitude }};
+            const destLng = {{ $destinationLongitude }};
 
             var map = L.map('tracking-map').setView([destLat, destLng], 14);
 
