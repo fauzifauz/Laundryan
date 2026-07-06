@@ -5,13 +5,19 @@ namespace App\Http\Controllers\Courier;
 use App\Events\CourierLocationUpdated;
 use App\Events\CourierStatusUpdated;
 use App\Events\LocationUpdated;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Location;
 use App\Models\Order;
 use App\Models\OrderPhoto;
+use App\Models\OrderStatusLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Throwable;
 
 class OrderController extends Controller
 {
@@ -20,7 +26,8 @@ class OrderController extends Controller
         'picking_up',
         'picked_up',
         'in_transit_to_laundry',
-        'arrived_at_laundry',
+
+        // Dukungan data lama
         'penjemputan',
         'dijemput',
         'diantar',
@@ -30,6 +37,8 @@ class OrderController extends Controller
     private const DELIVERY_ACTIVE_STATUSES = [
         'ready_for_delivery',
         'delivering',
+
+        // Dukungan data lama
         'pengantaran',
         'diantarkan',
     ];
@@ -38,6 +47,71 @@ class OrderController extends Controller
         'completed',
         'cancelled',
         'selesai',
+    ];
+
+    private const TO_LAUNDRY_STATUSES = [
+        'picked_up',
+        'in_transit_to_laundry',
+
+        // Dukungan data lama
+        'dijemput',
+        'diantar',
+        'sampai',
+    ];
+
+    private const STATUS_TRANSITIONS = [
+        // Pickup standar
+        'waiting_pickup' => 'picking_up',
+        'picking_up' => 'picked_up',
+        'picked_up' => 'in_transit_to_laundry',
+        'in_transit_to_laundry' => 'arrived_at_laundry',
+
+        // Pickup data lama
+        'penjemputan' => 'picked_up',
+        'dijemput' => 'in_transit_to_laundry',
+        'diantar' => 'arrived_at_laundry',
+        'sampai' => 'arrived_at_laundry',
+
+        // Delivery standar
+        'ready_for_delivery' => 'delivering',
+        'delivering' => 'completed',
+
+        // Delivery data lama
+        'pengantaran' => 'completed',
+        'diantarkan' => 'completed',
+    ];
+
+    private const PHOTO_REQUIRED_STATUSES = [
+        'picked_up',
+        'completed',
+    ];
+
+    private const STATUS_LABELS = [
+        'pending_payment' => 'Menunggu Pembayaran',
+
+        'waiting_pickup' => 'Menunggu Penjemputan',
+        'picking_up' => 'Proses Penjemputan',
+        'picked_up' => 'Laundry Dijemput',
+        'in_transit_to_laundry' => 'Dalam Perjalanan ke Laundry',
+        'arrived_at_laundry' => 'Sampai di Laundry',
+
+        'washing' => 'Proses Pencucian',
+        'drying_ironing' => 'Pengeringan dan Setrika',
+        'packing' => 'Packing',
+        'ready_for_delivery' => 'Siap Diantar',
+
+        'delivering' => 'Dalam Pengantaran',
+        'completed' => 'Selesai Diantar',
+        'cancelled' => 'Dibatalkan',
+
+        // Label data lama
+        'penjemputan' => 'Proses Penjemputan',
+        'dijemput' => 'Laundry Dijemput',
+        'diantar' => 'Dalam Perjalanan ke Laundry',
+        'sampai' => 'Sampai di Laundry',
+        'pengantaran' => 'Dalam Pengantaran',
+        'diantarkan' => 'Selesai Diantar',
+        'selesai' => 'Selesai',
     ];
 
     private const DEFAULT_LATITUDE = -6.1664983;
@@ -168,9 +242,44 @@ class OrderController extends Controller
             'deliveryCourier',
             'photos.user',
             'messages.sender',
+            'statusLogs.user',
         ]);
 
-        return view('kurir.orders.show', compact('order'));
+        $statusLabel = $this->getStatusLabel($order->status);
+        $nextStatus = $this->getNextStatus($order->status);
+
+        $nextStatusLabel = $nextStatus
+            ? $this->getStatusLabel($nextStatus)
+            : null;
+
+        $photoRequired = $nextStatus
+            ? $this->isPhotoRequired($nextStatus)
+            : false;
+
+        $canUpdateStatus = $nextStatus !== null
+            && $this->canHandleCurrentFlow(
+                $order,
+                $courierId
+            );
+
+        $isPickupFlow = $this->isPickupFlow($order->status);
+
+        [
+            $destinationLatitude,
+            $destinationLongitude,
+        ] = $this->getDestinationCoordinates($order);
+
+        return view('kurir.orders.show', compact(
+            'order',
+            'statusLabel',
+            'nextStatus',
+            'nextStatusLabel',
+            'photoRequired',
+            'canUpdateStatus',
+            'isPickupFlow',
+            'destinationLatitude',
+            'destinationLongitude'
+        ));
     }
 
     public function updateStatus(
@@ -184,39 +293,90 @@ class OrderController extends Controller
             403
         );
 
+        abort_unless(
+            $this->canHandleCurrentFlow($order, $courierId),
+            403
+        );
+
+        $nextStatus = $this->getNextStatus($order->status);
+
+        if ($nextStatus === null) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'status' => 'Order ini tidak memiliki tahap kurir berikutnya.',
+                ]);
+        }
+
+        $photoRequired = $this->isPhotoRequired($nextStatus);
+
         $validated = $request->validate([
             'status' => [
                 'required',
                 'string',
-                'max:50',
+                Rule::in([$nextStatus]),
             ],
             'photo' => [
-                'nullable',
+                $photoRequired ? 'required' : 'nullable',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
             ],
+        ], [
+            'status.in' => 'Status tidak sesuai dengan urutan proses order.',
+            'photo.required' => 'Foto bukti wajib diunggah pada tahap ini.',
+            'photo.image' => 'File bukti harus berupa gambar.',
+            'photo.mimes' => 'Format foto harus JPG, JPEG, PNG, atau WEBP.',
+            'photo.max' => 'Ukuran foto maksimal 2 MB.',
         ]);
 
-        $order->update([
-            'status' => $validated['status'],
-        ]);
+        $oldStatus = $order->status;
+        $photoPath = null;
 
         if ($request->hasFile('photo')) {
             $photoPath = $request
                 ->file('photo')
                 ->store('order_photos', 'public');
-
-            OrderPhoto::create([
-                'order_id' => $order->id,
-                'user_id' => $courierId,
-                'photo_path' => $photoPath,
-                'context' => $validated['status'],
-            ]);
         }
 
-        $order->load([
+        try {
+            DB::transaction(function () use (
+                $order,
+                $validated,
+                $courierId,
+                $photoPath
+            ) {
+                $order->update([
+                    'status' => $validated['status'],
+                ]);
+
+                if ($photoPath !== null) {
+                    OrderPhoto::create([
+                        'order_id' => $order->id,
+                        'user_id' => $courierId,
+                        'photo_path' => $photoPath,
+                        'context' => $validated['status'],
+                    ]);
+                }
+
+                OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'status' => $validated['status'],
+                    'user_id' => $courierId,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            if ($photoPath !== null) {
+                Storage::disk('public')->delete($photoPath);
+            }
+
+            throw $exception;
+        }
+
+        $order->refresh()->load([
             'customer',
+            'service',
+            'itemType',
             'pickupCourier',
             'deliveryCourier',
         ]);
@@ -225,12 +385,19 @@ class OrderController extends Controller
             new CourierStatusUpdated($order)
         );
 
+        broadcast(
+            new OrderStatusUpdated($order)
+        )->toOthers();
+
         return redirect()
             ->back()
             ->with(
                 'success',
-                'Status berhasil diperbarui: '
-                .$validated['status']
+                sprintf(
+                    'Status berhasil diperbarui dari %s menjadi %s.',
+                    $this->getStatusLabel($oldStatus),
+                    $this->getStatusLabel($validated['status'])
+                )
             );
     }
 
@@ -295,49 +462,132 @@ class OrderController extends Controller
         ]);
     }
 
+    private function getNextStatus(string $currentStatus): ?string
+    {
+        return self::STATUS_TRANSITIONS[$currentStatus] ?? null;
+    }
+
+    private function getStatusLabel(string $status): string
+    {
+        return self::STATUS_LABELS[$status]
+            ?? ucfirst(str_replace('_', ' ', $status));
+    }
+
+    private function isPhotoRequired(string $status): bool
+    {
+        return in_array(
+            $status,
+            self::PHOTO_REQUIRED_STATUSES,
+            true
+        );
+    }
+
     private function isAssignedToCourier(
         Order $order,
         int $courierId
     ): bool {
-        $isPickupCourier =
-            (int) $order->pickup_courier_id === $courierId;
+        return $this->isPickupCourier($order, $courierId)
+            || $this->isDeliveryCourier($order, $courierId)
+            || $this->isLegacyCourier($order, $courierId);
+    }
 
-        $isDeliveryCourier =
-            (int) $order->delivery_courier_id === $courierId;
+    private function canHandleCurrentFlow(
+        Order $order,
+        int $courierId
+    ): bool {
+        if ($this->isPickupFlow($order->status)) {
+            return $this->isPickupCourier($order, $courierId)
+                || $this->isLegacyCourier($order, $courierId);
+        }
 
-        $isLegacyCourier =
-            $order->pickup_courier_id === null
+        if ($this->isDeliveryFlow($order->status)) {
+            return $this->isDeliveryCourier($order, $courierId)
+                || $this->isLegacyCourier($order, $courierId);
+        }
+
+        return false;
+    }
+
+    private function isPickupCourier(
+        Order $order,
+        int $courierId
+    ): bool {
+        return $order->pickup_courier_id !== null
+            && (int) $order->pickup_courier_id === $courierId;
+    }
+
+    private function isDeliveryCourier(
+        Order $order,
+        int $courierId
+    ): bool {
+        return $order->delivery_courier_id !== null
+            && (int) $order->delivery_courier_id === $courierId;
+    }
+
+    private function isLegacyCourier(
+        Order $order,
+        int $courierId
+    ): bool {
+        return $order->pickup_courier_id === null
             && $order->delivery_courier_id === null
             && (int) $order->courier_id === $courierId;
+    }
 
-        return $isPickupCourier
-            || $isDeliveryCourier
-            || $isLegacyCourier;
+    private function isPickupFlow(string $status): bool
+    {
+        return in_array(
+            $status,
+            self::PICKUP_ACTIVE_STATUSES,
+            true
+        );
+    }
+
+    private function isDeliveryFlow(string $status): bool
+    {
+        return in_array(
+            $status,
+            self::DELIVERY_ACTIVE_STATUSES,
+            true
+        );
     }
 
     private function getDestinationCoordinates(
         Order $order
     ): array {
-        $isPickup = in_array(
-            $order->status,
-            self::PICKUP_ACTIVE_STATUSES,
-            true
-        );
+        if (
+            in_array(
+                $order->status,
+                self::TO_LAUNDRY_STATUSES,
+                true
+            )
+        ) {
+            return [
+                self::DEFAULT_LATITUDE,
+                self::DEFAULT_LONGITUDE,
+            ];
+        }
 
-        $latitude = $isPickup
-            ? $order->pickup_lat
-            : $order->delivery_lat;
-
-        $longitude = $isPickup
-            ? $order->pickup_lng
-            : $order->delivery_lng;
+        if ($this->isPickupFlow($order->status)) {
+            return [
+                (float) (
+                    $order->pickup_lat
+                    ?: self::DEFAULT_LATITUDE
+                ),
+                (float) (
+                    $order->pickup_lng
+                    ?: self::DEFAULT_LONGITUDE
+                ),
+            ];
+        }
 
         return [
             (float) (
-                $latitude ?: self::DEFAULT_LATITUDE
+                $order->delivery_lat
+                ?: self::DEFAULT_LATITUDE
             ),
             (float) (
-                $longitude ?: self::DEFAULT_LONGITUDE
+                $order->delivery_lng
+                ?: self::DEFAULT_LONGITUDE
             ),
         ];
     }

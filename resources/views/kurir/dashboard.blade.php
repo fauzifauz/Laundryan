@@ -7,18 +7,28 @@
 
     <div class="py-6">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
-
             @if(session('success'))
-                <div id="flash-message"
-                    class="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm font-medium flex items-center gap-2">
-                    <span class="material-symbols-outlined text-green-600 text-base">check_circle</span>
+                <div
+                    id="flash-message"
+                    class="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-medium text-green-800"
+                >
+                    <span class="material-symbols-outlined text-base text-green-600">
+                        check_circle
+                    </span>
+
                     {{ session('success') }}
                 </div>
             @endif
 
             <div class="flex items-center justify-between">
-                <h3 class="text-lg font-bold text-gray-800">Active Tasks</h3>
-                <span id="gps-status" class="text-[10px] font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-500">
+                <h3 class="text-lg font-bold text-gray-800">
+                    Active Tasks
+                </h3>
+
+                <span
+                    id="gps-status"
+                    class="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-bold text-gray-500"
+                >
                     📍 GPS Waiting...
                 </span>
             </div>
@@ -26,100 +36,145 @@
             <div class="space-y-4" id="order-list">
                 @forelse($orders as $order)
                     @php
-                        // Determine next status buttons
-                        $pickupStatuses = ['penjemputan', 'dijemput', 'diantar', 'sampai'];
-                        $deliveryStatuses = ['pengantaran', 'diantarkan', 'selesai'];
-
-                        $flowMap = [
-                            // Pickup flow
-                            'penjemputan' => ['label' => 'Confirm Pickup', 'next' => 'dijemput', 'color' => 'bg-amber-500 hover:bg-amber-600'],
-                            'dijemput' => ['label' => 'Delivering to Laundry', 'next' => 'diantar', 'color' => 'bg-amber-600 hover:bg-amber-700'],
-                            'diantar' => ['label' => 'Arrived at Laundry', 'next' => 'sampai', 'color' => 'bg-orange-500 hover:bg-orange-600'],
-                            'sampai' => null, // Final pickup step — handled by laundry staff
-
-                            // Delivery flow
-                            'pengantaran' => ['label' => 'Confirm Delivery', 'next' => 'diantarkan', 'color' => 'bg-emerald-500 hover:bg-emerald-600'],
-                            'diantarkan' => ['label' => 'Arrived at Customer', 'next' => 'selesai', 'color' => 'bg-emerald-600 hover:bg-emerald-700'],
-                            'selesai' => null, // Final delivery step
+                        $pickupStatuses = [
+                            'waiting_pickup',
+                            'picking_up',
+                            'picked_up',
+                            'in_transit_to_laundry',
+                            'penjemputan',
+                            'dijemput',
+                            'diantar',
+                            'sampai',
                         ];
 
-                        $isPickup = in_array($order->status, $pickupStatuses);
-                        $flow = $flowMap[$order->status] ?? null;
+                        $statusLabels = [
+                            'waiting_pickup' => 'Menunggu Penjemputan',
+                            'picking_up' => 'Proses Penjemputan',
+                            'picked_up' => 'Laundry Dijemput',
+                            'in_transit_to_laundry' => 'Dalam Perjalanan ke Laundry',
+                            'arrived_at_laundry' => 'Sampai di Laundry',
 
-                        $badgeColor = match (true) {
-                            in_array($order->status, $pickupStatuses) => 'bg-amber-100 text-amber-700',
-                            in_array($order->status, $deliveryStatuses) => 'bg-emerald-100 text-emerald-700',
-                            default => 'bg-gray-100 text-gray-600',
-                        };
+                            'ready_for_delivery' => 'Siap Diantar',
+                            'delivering' => 'Dalam Pengantaran',
+                            'completed' => 'Selesai Diantar',
 
-                        $typeLabel = $isPickup ? 'Pickup' : 'Delivery';
+                            'penjemputan' => 'Proses Penjemputan',
+                            'dijemput' => 'Laundry Dijemput',
+                            'diantar' => 'Dalam Perjalanan ke Laundry',
+                            'sampai' => 'Sampai di Laundry',
+                            'pengantaran' => 'Dalam Pengantaran',
+                            'diantarkan' => 'Selesai Diantar',
+                            'selesai' => 'Selesai',
+                        ];
+
+                        $isPickup = in_array(
+                            $order->status,
+                            $pickupStatuses,
+                            true
+                        );
+
+                        $typeLabel = $isPickup
+                            ? 'Pickup'
+                            : 'Delivery';
+
+                        $badgeColor = $isPickup
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-emerald-100 text-emerald-700';
+
+                        $statusLabel = $statusLabels[$order->status]
+                            ?? ucfirst(str_replace('_', ' ', $order->status));
+
+                        $address = $isPickup
+                            ? $order->pickup_address
+                            : $order->delivery_address;
                     @endphp
 
-                    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
-                        data-order-id="{{ $order->id }}">
-
-                        {{-- Header --}}
-                        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <div
+                        class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm"
+                        data-order-id="{{ $order->id }}"
+                    >
+                        <div class="flex items-start justify-between border-b border-gray-100 px-5 py-4">
                             <div>
-                                <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                    {{ $order->order_code }}</p>
-                                <h4 class="text-base font-bold text-gray-900 mt-0.5">{{ $order->customer->name }}</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">{{ $order->service->name }} •
-                                    {{ $order->itemType->name }}</p>
+                                <p class="text-xs font-bold uppercase tracking-widest text-gray-400">
+                                    {{ $order->order_code }}
+                                </p>
+
+                                <h4 class="mt-1 text-base font-bold text-gray-900">
+                                    {{ $order->customer->name }}
+                                </h4>
+
+                                <p class="mt-1 text-xs text-gray-500">
+                                    {{ $order->service->name }}
+                                    •
+                                    {{ $order->itemType->name }}
+                                </p>
                             </div>
+
                             <div class="text-right">
-                                <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase {{ $badgeColor }}">
+                                <span
+                                    class="rounded-full px-3 py-1 text-[11px] font-black uppercase {{ $badgeColor }}"
+                                >
                                     {{ $typeLabel }}
                                 </span>
-                                <p class="text-xs text-gray-400 mt-1 uppercase font-bold">
-                                    {{ str_replace('_', ' ', $order->status) }}</p>
+
+                                <p class="mt-2 max-w-40 text-xs font-bold text-gray-500">
+                                    {{ $statusLabel }}
+                                </p>
                             </div>
                         </div>
 
-                        {{-- Info --}}
-                        <div class="px-5 py-3 bg-gray-50 grid grid-cols-2 gap-3 text-xs">
+                        <div class="grid grid-cols-1 gap-4 bg-gray-50 px-5 py-4 text-xs sm:grid-cols-2">
                             <div>
-                                <p class="font-bold text-gray-400 uppercase tracking-wider mb-0.5">
-                                    {{ $isPickup ? 'Pickup Address' : 'Delivery Address' }}
+                                <p class="mb-1 font-bold uppercase tracking-wider text-gray-400">
+                                    {{ $isPickup
+                                        ? 'Pickup Address'
+                                        : 'Delivery Address' }}
                                 </p>
-                                <p class="text-gray-700 font-medium">
-                                    {{ $isPickup ? $order->pickup_address : $order->delivery_address }}
+
+                                <p class="font-medium leading-relaxed text-gray-700">
+                                    {{ $address }}
                                 </p>
                             </div>
+
                             <div>
-                                <p class="font-bold text-gray-400 uppercase tracking-wider mb-0.5">Schedule</p>
-                                <p class="text-gray-700 font-medium">{{ $order->pickup_time->format('H:i, d M Y') }}</p>
+                                <p class="mb-1 font-bold uppercase tracking-wider text-gray-400">
+                                    Schedule
+                                </p>
+
+                                <p class="font-medium text-gray-700">
+                                    {{ $order->pickup_time
+                                        ? $order->pickup_time->format('H:i, d M Y')
+                                        : '-' }}
+                                </p>
                             </div>
                         </div>
 
-                        {{-- Action Buttons --}}
-                        <div class="px-5 py-4 flex flex-col gap-2">
-                            @if($flow)
-                                <form method="POST" action="{{ route('kurir.orders.status', $order->id) }}" class="status-form">
-                                    @csrf
-                                    <input type="hidden" name="status" value="{{ $flow['next'] }}">
-                                    <button type="submit"
-                                        class="w-full {{ $flow['color'] }} text-white font-bold py-3 rounded-xl text-sm transition-all active:scale-95 flex items-center justify-center gap-2">
-                                        <span class="material-symbols-outlined text-base">arrow_forward</span>
-                                        {{ $flow['label'] }}
-                                    </button>
-                                </form>
-                            @else
-                                <div class="text-center py-2 text-sm text-gray-500 font-medium italic">
-                                    ✅ Task completed — waiting for admin action.
-                                </div>
-                            @endif
+                        <div class="px-5 py-4">
+                            <p class="mb-3 text-center text-xs text-gray-500">
+                                Update status dan unggah foto bukti dilakukan melalui detail order.
+                            </p>
 
-                            <a href="{{ route('kurir.orders.show', $order->id) }}"
-                                class="w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-xl text-sm transition-all">
-                                Order Details
+                            <a
+                                href="{{ route('kurir.orders.show', $order->id) }}"
+                                class="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 active:scale-95"
+                            >
+                                <span class="material-symbols-outlined text-base">
+                                    open_in_new
+                                </span>
+
+                                Buka Detail Order
                             </a>
                         </div>
                     </div>
                 @empty
-                    <div class="text-center py-20 text-gray-400">
-                        <span class="material-symbols-outlined text-5xl mb-3 block">task_alt</span>
-                        <p class="font-medium">No active tasks. Great job!</p>
+                    <div class="py-20 text-center text-gray-400">
+                        <span class="material-symbols-outlined mb-3 block text-5xl">
+                            task_alt
+                        </span>
+
+                        <p class="font-medium">
+                            Tidak ada tugas aktif.
+                        </p>
                     </div>
                 @endforelse
             </div>
@@ -128,67 +183,109 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const statusEl = document.getElementById('gps-status');
-            const LOCATION_URL = '{{ route("kurir.location.update") }}';
-            const CSRF_TOKEN = '{{ csrf_token() }}';
+            const statusElement = document.getElementById('gps-status');
+            const locationUrl = '{{ route("kurir.location.update") }}';
+            const csrfToken = '{{ csrf_token() }}';
 
-            // Get first active order id (for tagging location updates)
-            const firstOrderEl = document.querySelector('[data-order-id]');
-            const orderId = firstOrderEl ? firstOrderEl.dataset.orderId : null;
+            const firstOrderElement = document.querySelector(
+                '[data-order-id]'
+            );
 
-            function sendLocation(lat, lng) {
-                fetch(LOCATION_URL, {
+            const orderId = firstOrderElement
+                ? firstOrderElement.dataset.orderId
+                : null;
+
+            function sendLocation(latitude, longitude) {
+                fetch(locationUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': CSRF_TOKEN,
+                        'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
                     },
                     body: JSON.stringify({
-                        latitude: lat,
-                        longitude: lng,
+                        latitude: latitude,
+                        longitude: longitude,
                         order_id: orderId,
-                    })
+                    }),
                 })
-                    .then(r => r.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(
+                                'Location request failed.'
+                            );
+                        }
+
+                        return response.json();
+                    })
                     .then(() => {
-                        const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-                        statusEl.textContent = `📍 GPS Active — ${now}`;
-                        statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-green-100 text-green-700';
+                        const currentTime = new Date()
+                            .toLocaleTimeString(
+                                'id-ID',
+                                {
+                                    hour12: false,
+                                }
+                            );
+
+                        statusElement.textContent =
+                            `📍 GPS Active — ${currentTime}`;
+
+                        statusElement.className =
+                            'rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700';
                     })
                     .catch(() => {
-                        statusEl.textContent = '⚠️ GPS Failed';
-                        statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-red-100 text-red-600';
+                        statusElement.textContent =
+                            '⚠️ GPS Failed';
+
+                        statusElement.className =
+                            'rounded-full bg-red-100 px-2 py-1 text-[10px] font-bold text-red-600';
                     });
             }
 
             function startTracking() {
                 if (!navigator.geolocation) {
-                    statusEl.textContent = '❌ GPS not supported';
+                    statusElement.textContent =
+                        '❌ GPS not supported';
+
                     return;
                 }
 
-                // Watch position for real GPS movement
                 navigator.geolocation.watchPosition(
-                    (pos) => {
-                        sendLocation(pos.coords.latitude, pos.coords.longitude);
+                    position => {
+                        sendLocation(
+                            position.coords.latitude,
+                            position.coords.longitude
+                        );
                     },
-                    (err) => {
-                        statusEl.textContent = '⚠️ GPS Permission Denied';
-                        statusEl.className = 'text-[10px] font-bold px-2 py-1 rounded-full bg-yellow-100 text-yellow-700';
+                    () => {
+                        statusElement.textContent =
+                            '⚠️ GPS Permission Denied';
+
+                        statusElement.className =
+                            'rounded-full bg-yellow-100 px-2 py-1 text-[10px] font-bold text-yellow-700';
                     },
-                    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 5000,
+                        timeout: 10000,
+                    }
                 );
             }
 
-            // Start sending location immediately if there are active orders
-            @if($orders->count() > 0)
+            @if($orders->isNotEmpty())
                 startTracking();
             @endif
 
-        // Auto-dismiss flash message
-        const flash = document.getElementById('flash-message');
-            if (flash) setTimeout(() => flash.remove(), 4000);
+            const flashMessage = document.getElementById(
+                'flash-message'
+            );
+
+            if (flashMessage) {
+                setTimeout(
+                    () => flashMessage.remove(),
+                    4000
+                );
+            }
         });
     </script>
 </x-app-layout>
