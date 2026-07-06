@@ -719,6 +719,11 @@ Route::middleware(['auth', 'verified', 'role:kurir'])
          * agar "orders" tidak dianggap sebagai parameter order.
          */
         Route::get(
+            '/delivery-board',
+            [\App\Http\Controllers\Courier\OrderController::class, 'deliveryBoard']
+        )->name('delivery-board');
+
+        Route::get(
             '/orders',
             [\App\Http\Controllers\Courier\OrderController::class, 'orders']
         )->name('orders.index');
@@ -768,6 +773,7 @@ Route::middleware(['auth', 'verified', 'role:kurir'])
             '/salary/{payroll}/payslip/pdf',
             [\App\Http\Controllers\Courier\SalaryController::class, 'downloadPayslipPdf']
         )->name('salary.payslip.pdf');
+
 
         /*
         |--------------------------------------------------------------------------

@@ -14,6 +14,7 @@ use App\Models\OrderStatusLog;
 use App\Models\Review;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -109,109 +110,9 @@ class OrderController extends Controller
     {
         $courierId = (int) Auth::id();
 
-        $orders = Order::query()
-            ->where(function (Builder $query) use ($courierId) {
-                $query
-                    ->where(function (Builder $pickupQuery) use ($courierId) {
-                        $pickupQuery
-                            ->where('pickup_courier_id', $courierId)
-                            ->whereIn(
-                                'status',
-                                self::PICKUP_ACTIVE_STATUSES
-                            );
-                    })
-                    ->orWhere(function (
-                        Builder $deliveryQuery
-                    ) use ($courierId) {
-                        $deliveryQuery
-                            ->where('delivery_courier_id', $courierId)
-                            ->whereIn(
-                                'status',
-                                self::DELIVERY_ACTIVE_STATUSES
-                            );
-                    })
-                    ->orWhere(function (
-                        Builder $legacyQuery
-                    ) use ($courierId) {
-                        $legacyQuery
-                            ->where('courier_id', $courierId)
-                            ->whereNull('pickup_courier_id')
-                            ->whereNull('delivery_courier_id')
-                            ->whereNotIn(
-                                'status',
-                                self::FINISHED_STATUSES
-                            );
-                    });
-            })
-            ->with([
-                'customer',
-                'service',
-                'itemType',
-            ])
-            ->latest('updated_at')
-            ->get();
-
-        if ($orders->isNotEmpty()) {
-            $latestLocation = Location::query()
-                ->where('user_id', $courierId)
-                ->latest()
-                ->first();
-
-            $currentLatitude = (float) (
-                $latestLocation?->latitude
-                ?? self::DEFAULT_LATITUDE
-            );
-
-            $currentLongitude = (float) (
-                $latestLocation?->longitude
-                ?? self::DEFAULT_LONGITUDE
-            );
-
-            $sortedOrders = [];
-            $remainingOrders = $orders->values()->all();
-
-            while (count($remainingOrders) > 0) {
-                $nearestKey = null;
-                $minimumDistance = null;
-
-                foreach ($remainingOrders as $key => $order) {
-                    [
-                        $destinationLatitude,
-                        $destinationLongitude,
-                    ] = $this->getDestinationCoordinates($order);
-
-                    $distance = sqrt(
-                        (($destinationLatitude - $currentLatitude) ** 2)
-                        + (($destinationLongitude - $currentLongitude) ** 2)
-                    );
-
-                    if (
-                        $minimumDistance === null
-                        || $distance < $minimumDistance
-                    ) {
-                        $minimumDistance = $distance;
-                        $nearestKey = $key;
-                    }
-                }
-
-                if ($nearestKey === null) {
-                    break;
-                }
-
-                $nearestOrder = $remainingOrders[$nearestKey];
-
-                $sortedOrders[] = $nearestOrder;
-
-                unset($remainingOrders[$nearestKey]);
-
-                [
-                    $currentLatitude,
-                    $currentLongitude,
-                ] = $this->getDestinationCoordinates($nearestOrder);
-            }
-
-            $orders = collect($sortedOrders);
-        }
+        $orders = $this->getActiveOrdersForCourier(
+            $courierId
+        );
 
         $pickupActiveQuery = $this->assignedOrdersQuery(
             $courierId
@@ -292,6 +193,22 @@ class OrderController extends Controller
             'recentActivities',
             'recentOrders',
             'ratingSummary',
+            'statusLabels'
+        ));
+    }
+
+    public function deliveryBoard()
+    {
+        $courierId = (int) Auth::id();
+
+        $orders = $this->getActiveOrdersForCourier(
+            $courierId
+        );
+
+        $statusLabels = self::STATUS_LABELS;
+
+        return view('kurir.delivery-board', compact(
+            'orders',
             'statusLabels'
         ));
     }
@@ -748,6 +665,150 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Lokasi kurir berhasil diperbarui.',
         ]);
+    }
+
+    private function getActiveOrdersForCourier(
+        int $courierId
+    ): Collection {
+        $activeStatuses = array_merge(
+            self::PICKUP_ACTIVE_STATUSES,
+            self::DELIVERY_ACTIVE_STATUSES
+        );
+
+        $orders = Order::query()
+            ->where(function (
+                Builder $query
+            ) use ($courierId, $activeStatuses) {
+                $query
+                    ->where(function (
+                        Builder $pickupQuery
+                    ) use ($courierId) {
+                        $pickupQuery
+                            ->where(
+                                'pickup_courier_id',
+                                $courierId
+                            )
+                            ->whereIn(
+                                'status',
+                                self::PICKUP_ACTIVE_STATUSES
+                            );
+                    })
+                    ->orWhere(function (
+                        Builder $deliveryQuery
+                    ) use ($courierId) {
+                        $deliveryQuery
+                            ->where(
+                                'delivery_courier_id',
+                                $courierId
+                            )
+                            ->whereIn(
+                                'status',
+                                self::DELIVERY_ACTIVE_STATUSES
+                            );
+                    })
+                    ->orWhere(function (
+                        Builder $legacyQuery
+                    ) use (
+                        $courierId,
+                        $activeStatuses
+                    ) {
+                        $legacyQuery
+                            ->where(
+                                'courier_id',
+                                $courierId
+                            )
+                            ->whereNull(
+                                'pickup_courier_id'
+                            )
+                            ->whereNull(
+                                'delivery_courier_id'
+                            )
+                            ->whereIn(
+                                'status',
+                                $activeStatuses
+                            );
+                    });
+            })
+            ->with([
+                'customer',
+                'service',
+                'itemType',
+            ])
+            ->latest('updated_at')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            return $orders;
+        }
+
+        $latestLocation = Location::query()
+            ->where('user_id', $courierId)
+            ->latest()
+            ->first();
+
+        $currentLatitude = (float) (
+            $latestLocation?->latitude
+            ?? self::DEFAULT_LATITUDE
+        );
+
+        $currentLongitude = (float) (
+            $latestLocation?->longitude
+            ?? self::DEFAULT_LONGITUDE
+        );
+
+        $sortedOrders = [];
+
+        $remainingOrders = $orders
+            ->values()
+            ->all();
+
+        while (count($remainingOrders) > 0) {
+            $nearestKey = null;
+            $minimumDistance = null;
+
+            foreach ($remainingOrders as $key => $order) {
+                [
+                    $destinationLatitude,
+                    $destinationLongitude,
+                ] = $this->getDestinationCoordinates(
+                    $order
+                );
+
+                $distance = sqrt(
+                    (($destinationLatitude - $currentLatitude) ** 2)
+                    + (($destinationLongitude - $currentLongitude) ** 2)
+                );
+
+                if (
+                    $minimumDistance === null
+                    || $distance < $minimumDistance
+                ) {
+                    $minimumDistance = $distance;
+                    $nearestKey = $key;
+                }
+            }
+
+            if ($nearestKey === null) {
+                break;
+            }
+
+            $nearestOrder = $remainingOrders[
+                $nearestKey
+            ];
+
+            $sortedOrders[] = $nearestOrder;
+
+            unset($remainingOrders[$nearestKey]);
+
+            [
+                $currentLatitude,
+                $currentLongitude,
+            ] = $this->getDestinationCoordinates(
+                $nearestOrder
+            );
+        }
+
+        return collect($sortedOrders);
     }
 
     private function getCourierRatingSummary(
