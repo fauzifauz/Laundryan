@@ -207,6 +207,10 @@ class OrderController extends Controller
                     }
                 }
 
+                if ($nearestKey === null) {
+                    break;
+                }
+
                 $nearestOrder = $remainingOrders[$nearestKey];
 
                 $sortedOrders[] = $nearestOrder;
@@ -223,6 +227,145 @@ class OrderController extends Controller
         }
 
         return view('kurir.dashboard', compact('orders'));
+    }
+
+    public function orders(Request $request)
+    {
+        $courierId = (int) Auth::id();
+
+        $search = trim((string) $request->query('search', ''));
+        $scope = (string) $request->query('scope', 'active');
+        $type = (string) $request->query('type', 'all');
+        $status = (string) $request->query('status', '');
+
+        if (! in_array($scope, ['active', 'completed', 'all'], true)) {
+            $scope = 'active';
+        }
+
+        if (! in_array($type, ['all', 'pickup', 'delivery'], true)) {
+            $type = 'all';
+        }
+
+        if (
+            $status !== ''
+            && ! array_key_exists($status, self::STATUS_LABELS)
+        ) {
+            $status = '';
+        }
+
+        $query = $this
+            ->assignedOrdersQuery($courierId)
+            ->with([
+                'customer',
+                'service',
+                'itemType',
+                'pickupCourier',
+                'deliveryCourier',
+            ]);
+
+        if ($search !== '') {
+            $searchTerm = '%'.$search.'%';
+
+            $query->where(function (
+                Builder $searchQuery
+            ) use ($searchTerm) {
+                $searchQuery
+                    ->where('order_code', 'like', $searchTerm)
+                    ->orWhere('pickup_address', 'like', $searchTerm)
+                    ->orWhere('delivery_address', 'like', $searchTerm)
+                    ->orWhereHas('customer', function (
+                        Builder $customerQuery
+                    ) use ($searchTerm) {
+                        $customerQuery
+                            ->where('name', 'like', $searchTerm)
+                            ->orWhere('phone', 'like', $searchTerm);
+                    });
+            });
+        }
+
+        if ($scope === 'active') {
+            $query->whereNotIn(
+                'status',
+                self::FINISHED_STATUSES
+            );
+        }
+
+        if ($scope === 'completed') {
+            $query->whereIn(
+                'status',
+                ['completed', 'selesai']
+            );
+        }
+
+        if ($status !== '') {
+            $query->where('status', $status);
+        }
+
+        $this->applyTaskTypeFilter(
+            $query,
+            $type,
+            $courierId
+        );
+
+        $orders = $query
+            ->latest('updated_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        $pickupQuery = $this->assignedOrdersQuery($courierId);
+
+        $this->applyTaskTypeFilter(
+            $pickupQuery,
+            'pickup',
+            $courierId
+        );
+
+        $deliveryQuery = $this->assignedOrdersQuery($courierId);
+
+        $this->applyTaskTypeFilter(
+            $deliveryQuery,
+            'delivery',
+            $courierId
+        );
+
+        $statistics = [
+            'total' => $this
+                ->assignedOrdersQuery($courierId)
+                ->count(),
+
+            'active' => $this
+                ->assignedOrdersQuery($courierId)
+                ->whereNotIn(
+                    'status',
+                    self::FINISHED_STATUSES
+                )
+                ->count(),
+
+            'completed' => $this
+                ->assignedOrdersQuery($courierId)
+                ->whereIn(
+                    'status',
+                    ['completed', 'selesai']
+                )
+                ->count(),
+
+            'pickup' => $pickupQuery->count(),
+
+            'delivery' => $deliveryQuery->count(),
+        ];
+
+        $statusOptions = self::STATUS_LABELS;
+
+        return view('kurir.orders.index', compact(
+            'orders',
+            'statistics',
+            'statusOptions',
+            'courierId',
+            'search',
+            'scope',
+            'type',
+            'status'
+        ));
     }
 
     public function show(Order $order)
@@ -460,6 +603,111 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Lokasi kurir berhasil diperbarui.',
         ]);
+    }
+
+    private function assignedOrdersQuery(
+        int $courierId
+    ): Builder {
+        return Order::query()
+            ->where(function (
+                Builder $query
+            ) use ($courierId) {
+                $query
+                    ->where(
+                        'pickup_courier_id',
+                        $courierId
+                    )
+                    ->orWhere(
+                        'delivery_courier_id',
+                        $courierId
+                    )
+                    ->orWhere(function (
+                        Builder $legacyQuery
+                    ) use ($courierId) {
+                        $legacyQuery
+                            ->where(
+                                'courier_id',
+                                $courierId
+                            )
+                            ->whereNull(
+                                'pickup_courier_id'
+                            )
+                            ->whereNull(
+                                'delivery_courier_id'
+                            );
+                    });
+            });
+    }
+
+    private function applyTaskTypeFilter(
+        Builder $query,
+        string $type,
+        int $courierId
+    ): Builder {
+        if ($type === 'pickup') {
+            return $query->where(function (
+                Builder $typeQuery
+            ) use ($courierId) {
+                $typeQuery
+                    ->where(
+                        'pickup_courier_id',
+                        $courierId
+                    )
+                    ->orWhere(function (
+                        Builder $legacyQuery
+                    ) use ($courierId) {
+                        $legacyQuery
+                            ->where(
+                                'courier_id',
+                                $courierId
+                            )
+                            ->whereNull(
+                                'pickup_courier_id'
+                            )
+                            ->whereNull(
+                                'delivery_courier_id'
+                            )
+                            ->whereIn(
+                                'status',
+                                self::PICKUP_ACTIVE_STATUSES
+                            );
+                    });
+            });
+        }
+
+        if ($type === 'delivery') {
+            return $query->where(function (
+                Builder $typeQuery
+            ) use ($courierId) {
+                $typeQuery
+                    ->where(
+                        'delivery_courier_id',
+                        $courierId
+                    )
+                    ->orWhere(function (
+                        Builder $legacyQuery
+                    ) use ($courierId) {
+                        $legacyQuery
+                            ->where(
+                                'courier_id',
+                                $courierId
+                            )
+                            ->whereNull(
+                                'pickup_courier_id'
+                            )
+                            ->whereNull(
+                                'delivery_courier_id'
+                            )
+                            ->whereIn('status', [
+                                ...self::DELIVERY_ACTIVE_STATUSES,
+                                'completed',
+                                'selesai',
+                            ]);
+                    });
+            });
+        }
+
+        return $query;
     }
 
     private function getNextStatus(string $currentStatus): ?string

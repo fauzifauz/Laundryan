@@ -197,13 +197,28 @@
                 @endif
 
                 @if(Auth::user()->role === 'kurir')
-                    <x-sidebar-link :href="route('kurir.dashboard')" :active="request()->routeIs('kurir.dashboard')"
-                        icon="local_shipping">
-                        Delivery Board
+                    <x-sidebar-link
+                        :href="route('kurir.dashboard')"
+                        :active="request()->routeIs('kurir.dashboard')"
+                        icon="local_shipping"
+                    >
+                    Delivery Board
                     </x-sidebar-link>
-                    <x-sidebar-link :href="route('kurir.attendance.index')" :active="request()->routeIs('kurir.attendance.*')"
-                        icon="timer">
-                        Check In/Out
+
+                    <x-sidebar-link
+                        :href="route('kurir.orders.index')"
+                        :active="request()->routeIs('kurir.orders.*')"
+                        icon="shopping_basket"
+                    >
+                    Order & Riwayat
+                    </x-sidebar-link>
+
+                    <x-sidebar-link
+                        :href="route('kurir.attendance.index')"
+                        :active="request()->routeIs('kurir.attendance.*')"
+                        icon="timer"
+                    >
+                    Check In/Out
                     </x-sidebar-link>
                 @endif
 
