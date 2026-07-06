@@ -740,6 +740,37 @@ Route::middleware(['auth', 'verified', 'role:kurir'])
 
         /*
         |--------------------------------------------------------------------------
+        | Courier Salary Routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/salary',
+            [\App\Http\Controllers\Courier\SalaryController::class, 'index']
+        )->name('salary.index');
+
+        Route::get(
+            '/salary/export/pdf',
+            [\App\Http\Controllers\Courier\SalaryController::class, 'exportPdf']
+        )->name('salary.export.pdf');
+
+        Route::get(
+            '/salary/export/csv',
+            [\App\Http\Controllers\Courier\SalaryController::class, 'exportCsv']
+        )->name('salary.export.csv');
+
+        Route::post(
+            '/salary/{payroll}/withdraw',
+            [\App\Http\Controllers\Courier\SalaryController::class, 'withdraw']
+        )->name('salary.withdraw');
+
+        Route::get(
+            '/salary/{payroll}/payslip/pdf',
+            [\App\Http\Controllers\Courier\SalaryController::class, 'downloadPayslipPdf']
+        )->name('salary.payslip.pdf');
+
+        /*
+        |--------------------------------------------------------------------------
         | Courier Attendance Routes
         |--------------------------------------------------------------------------
         */

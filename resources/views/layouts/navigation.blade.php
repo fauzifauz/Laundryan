@@ -214,12 +214,21 @@
                     </x-sidebar-link>
 
                     <x-sidebar-link
+                        :href="route('kurir.salary.index')"
+                        :active="request()->routeIs('kurir.salary.*')"
+                            icon="payments"
+                    >
+                    Gaji
+                    </x-sidebar-link>
+                    
+                    <x-sidebar-link
                         :href="route('kurir.attendance.index')"
                         :active="request()->routeIs('kurir.attendance.*')"
                         icon="timer"
                     >
                     Check In/Out
                     </x-sidebar-link>
+
                 @endif
 
                 @if(Auth::user()->role === 'pelanggan')
