@@ -73,3 +73,8 @@ npm-debug.log*
 yarn-error.log
 /postcss.config.js.bak
 /tailwind.config.js.bak
+
+# Docker (local only)
+docker/
+docker-compose.yml
+.dockerignore
