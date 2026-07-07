@@ -268,9 +268,9 @@
                 </div>
             </section>
 
-            <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div class="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-3">
                 {{-- Active Tasks --}}
-                <section class="space-y-4 xl:col-span-2">
+                <section class="flex h-full flex-col xl:col-span-2">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-black text-gray-900">
@@ -290,8 +290,8 @@
                         </a>
                     </div>
 
-                    <div id="order-list" class="space-y-4">
-                        @forelse($orders as $order)
+                    <div id="order-list" class="mt-4 flex flex-1 flex-col gap-4">
+                        @forelse($orders->take(3) as $order)
                             @php
                                 $isPickup = in_array(
                                     $order->status,
@@ -398,7 +398,7 @@
                                 </div>
                             </article>
                         @empty
-                            <div class="rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center">
+                            <div class="flex flex-1 flex-col items-center justify-center rounded-3xl border border-dashed border-gray-300 bg-white px-6 py-10 text-center">
                                 <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-green-50 text-green-600">
                                     <span class="material-symbols-outlined text-4xl">
                                         task_alt
@@ -418,7 +418,7 @@
                 </section>
 
                 {{-- Performance --}}
-                <aside class="space-y-6">
+                <aside class="flex h-full flex-col gap-6">
                     <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                         <div class="flex items-center gap-3">
                             <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
@@ -479,7 +479,7 @@
                         </div>
                     </section>
 
-                    <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+                    <section class="flex flex-1 flex-col rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="font-black text-gray-900">
@@ -491,48 +491,81 @@
                                 </p>
                             </div>
 
-                            <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                                <span class="material-symbols-outlined">
-                                    history
-                                </span>
+                            <div class="flex items-center gap-2">
+                                @if($recentActivities->count() > 4)
+                                    <button
+                                        type="button"
+                                        id="activity-scroll-left"
+                                        aria-label="Geser aktivitas ke kiri"
+                                        class="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                    >
+                                        <span class="material-symbols-outlined text-lg">
+                                            chevron_left
+                                        </span>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        id="activity-scroll-right"
+                                        aria-label="Geser aktivitas ke kanan"
+                                        class="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                                    >
+                                        <span class="material-symbols-outlined text-lg">
+                                            chevron_right
+                                        </span>
+                                    </button>
+                                @endif
+
+                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                                    <span class="material-symbols-outlined">
+                                        history
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-5 space-y-4">
-                            @forelse($recentActivities as $activity)
-                                @php
-                                    $activityStatusLabel =
-                                        $statusLabels[$activity->status]
-                                        ?? ucfirst(
-                                            str_replace(
-                                                '_',
-                                                ' ',
-                                                $activity->status
-                                            )
-                                        );
-                                @endphp
+                        <div
+                            id="activity-list"
+                            class="activity-scroll-x mt-5 flex flex-1 snap-x snap-mandatory overflow-x-auto scroll-smooth"
+                        >
+                            @forelse($recentActivities->chunk(4) as $activityPage)
+                                <div class="w-full flex-shrink-0 snap-start space-y-4 pr-1">
+                                    @foreach($activityPage as $activity)
+                                        @php
+                                            $activityStatusLabel =
+                                                $statusLabels[$activity->status]
+                                                ?? ucfirst(
+                                                    str_replace(
+                                                        '_',
+                                                        ' ',
+                                                        $activity->status
+                                                    )
+                                                );
+                                        @endphp
 
-                                <div class="flex gap-3">
-                                    <div class="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50"></div>
+                                        <div class="flex gap-3">
+                                            <div class="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50"></div>
 
-                                    <div class="min-w-0 flex-1">
-                                        <p class="truncate text-xs font-black text-gray-800">
-                                            {{ $activity->order?->order_code ?? '-' }}
-                                            —
-                                            {{ $activityStatusLabel }}
-                                        </p>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="truncate text-xs font-black text-gray-800">
+                                                    {{ $activity->order?->order_code ?? '-' }}
+                                                    —
+                                                    {{ $activityStatusLabel }}
+                                                </p>
 
-                                        <p class="mt-1 truncate text-xs text-gray-500">
-                                            {{ $activity->order?->customer?->name ?? 'Pelanggan' }}
-                                        </p>
+                                                <p class="mt-1 truncate text-xs text-gray-500">
+                                                    {{ $activity->order?->customer?->name ?? 'Pelanggan' }}
+                                                </p>
 
-                                        <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                            {{ $activity->created_at->format('H:i') }}
-                                        </p>
-                                    </div>
+                                                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                    {{ $activity->created_at->format('H:i') }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             @empty
-                                <div class="rounded-2xl bg-gray-50 px-4 py-8 text-center">
+                                <div class="flex w-full flex-shrink-0 flex-1 flex-col items-center justify-center rounded-2xl bg-gray-50 px-4 py-8 text-center">
                                     <span class="material-symbols-outlined text-3xl text-gray-300">
                                         history_toggle_off
                                     </span>
@@ -641,6 +674,17 @@
             </section>
         </div>
     </div>
+
+    <style>
+        .activity-scroll-x {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .activity-scroll-x::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -755,6 +799,28 @@
                     'rounded-full bg-gray-100 px-4 py-2 text-xs font-black text-gray-500'
                 );
             @endif
+
+            const activityList = document.getElementById('activity-list');
+            const activityScrollLeft = document.getElementById('activity-scroll-left');
+            const activityScrollRight = document.getElementById('activity-scroll-right');
+
+            if (activityList && activityScrollLeft) {
+                activityScrollLeft.addEventListener('click', () => {
+                    activityList.scrollBy({
+                        left: -activityList.clientWidth,
+                        behavior: 'smooth',
+                    });
+                });
+            }
+
+            if (activityList && activityScrollRight) {
+                activityScrollRight.addEventListener('click', () => {
+                    activityList.scrollBy({
+                        left: activityList.clientWidth,
+                        behavior: 'smooth',
+                    });
+                });
+            }
 
             const flashMessage = document.getElementById(
                 'flash-message'

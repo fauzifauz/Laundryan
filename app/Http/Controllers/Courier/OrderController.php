@@ -167,7 +167,7 @@ class OrderController extends Controller
             ->whereDate('created_at', today())
             ->with('order.customer')
             ->latest()
-            ->limit(8)
+            ->limit(30)
             ->get();
 
         $recentOrders = $this
