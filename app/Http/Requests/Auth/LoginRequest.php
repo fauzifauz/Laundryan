@@ -133,7 +133,7 @@ class LoginRequest extends FormRequest
 
             if ($attempts >= 5) {
                 $lockoutMinutes = ceil($decaySeconds / 60);
-                if ($attempts === 5) {
+                if ($attempts === 5 && !empty($user->password) && empty($user->google_id)) {
                     Mail::to($user->email)->send(new BruteForceAlertMail($user, $lockoutMinutes));
                 }
                 throw ValidationException::withMessages([

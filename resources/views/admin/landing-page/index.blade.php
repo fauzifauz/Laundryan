@@ -54,7 +54,7 @@
     </style>
 
     <div class="py-6" x-data="{
-        activeCategory: @if(session('updated_key') === 'site' || session('updated_key') === 'contact' || session('updated_key') === 'socials') 'general' @else localStorage.getItem('cms_active_category') || 'landing' @endif,
+        activeCategory: @if(session('updated_key') === 'site' || session('updated_key') === 'contact' || session('updated_key') === 'socials' || session('updated_key') === 'login' || session('updated_key') === 'register' || session('updated_key') === 'forgot_password') 'general' @else localStorage.getItem('cms_active_category') || 'landing' @endif,
         activeTab: @if(session('updated_key')) '{{ session('updated_key') }}' @else localStorage.getItem('cms_active_tab') || 'hero' @endif,
         setActiveCategory(cat) {
             this.activeCategory = cat;
@@ -64,6 +64,20 @@
             this.activeTab = tab;
             localStorage.setItem('cms_active_tab', tab);
         },
+
+        // Auth Settings (Login, Register, Forgot Password)
+        loginLeftTitle: {{ json_encode($settings['login']['left_title'] ?? 'Welcome Back to Laundryan.') }},
+        loginLeftSubtitle: {{ json_encode($settings['login']['left_subtitle'] ?? 'Reclaim your time while we handle your garments with the gold standard of cleaning technology.') }},
+        loginRightTitle: {{ json_encode($settings['login']['right_title'] ?? 'Sign In') }},
+        loginRightSubtitle: {{ json_encode($settings['login']['right_subtitle'] ?? 'Access your premium laundry dashboard.') }},
+        registerLeftTitle: {{ json_encode($settings['register']['left_title'] ?? 'Join the Revolution of Clean.') }},
+        registerLeftSubtitle: {{ json_encode($settings['register']['left_subtitle'] ?? 'Create your account today and experience garment care that exceeds expectations, every single time.') }},
+        registerRightTitle: {{ json_encode($settings['register']['right_title'] ?? 'Create Account') }},
+        registerRightSubtitle: {{ json_encode($settings['register']['right_subtitle'] ?? 'Experience premium laundry services with ease.') }},
+        forgotPasswordLeftTitle: {{ json_encode($settings['forgot_password']['left_title'] ?? 'Reset Your Password.') }},
+        forgotPasswordLeftSubtitle: {{ json_encode($settings['forgot_password']['left_subtitle'] ?? 'No worries — enter your email and we\'ll send a secure link to get you back in.') }},
+        forgotPasswordRightTitle: {{ json_encode($settings['forgot_password']['right_title'] ?? 'Forgot Password?') }},
+        forgotPasswordRightSubtitle: {{ json_encode($settings['forgot_password']['right_subtitle'] ?? 'We\'ll email you a link to reset your password.') }},
 
         // Site Identity
         siteName: {{ json_encode($settings['site']['name'] ?? 'LAUNDRYAN') }},
@@ -375,6 +389,17 @@
                                     <span>Social Media</span>
                                 </div>
                                 <span class="w-1.5 h-1.5 rounded-full" :class="activeTab === 'socials' ? 'bg-white' : 'bg-transparent group-hover:bg-[#005bc0]/40'"></span>
+                            </button>
+
+                            <!-- Auth Settings Tab -->
+                            <button @click="setActiveTab('auth')"
+                                :class="activeTab === 'auth' ? 'bg-[#005bc0] text-white shadow-md shadow-[#005bc0]/20 font-black' : 'text-slate-500 hover:bg-slate-55 hover:text-slate-800 font-bold'"
+                                class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left transition-all duration-200 text-[10px] uppercase tracking-wider group">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                                    <span>Auth Pages Content</span>
+                                </div>
+                                <span class="w-1.5 h-1.5 rounded-full" :class="activeTab === 'auth' ? 'bg-white' : 'bg-transparent group-hover:bg-[#005bc0]/40'"></span>
                             </button>
                         </div>
                     </div>
@@ -1743,6 +1768,265 @@
                                         <a :href="'https://x.com/' + footerX" target="_blank" class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white">
                                             <span class="material-symbols-outlined text-xs">share</span>
                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- =====================================================================
+                         13. AUTHENTICATION PAGES SETTINGS
+                         ===================================================================== -->
+                    <div x-show="activeCategory === 'general' && activeTab === 'auth'" x-transition class="space-y-6">
+                        <!-- Login settings -->
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                            <!-- Editor Form (Left Col) -->
+                            <div class="xl:col-span-7 bg-white rounded-3xl border border-slate-200/70 p-5 md:p-6 space-y-4 shadow-sm">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <div>
+                                        <h4 class="text-sm font-black text-slate-800 uppercase tracking-tight">Login Page Settings</h4>
+                                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Customize titles and subtitles on the sign-in page</p>
+                                    </div>
+                                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#005bc0] flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-base">login</span>
+                                    </div>
+                                </div>
+
+                                @if(session('updated_key') === 'login')
+                                    <div x-data="{ showBadge: true }" x-show="showBadge" x-init="setTimeout(() => showBadge = false, 4000)" 
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                                        x-transition:leave="transition ease-in duration-300"
+                                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                                        x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-500/20 text-emerald-800 rounded-xl text-[10px] font-bold shadow-sm mb-3">
+                                        <span class="material-symbols-outlined text-[14px] font-black text-emerald-600">check_circle</span>
+                                        <span>Login Settings Updated Successfully</span>
+                                    </div>
+                                @endif
+
+                                <form action="{{ route('admin.landing-page.update', 'login') }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="section_subtype" value="login">
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Title</label>
+                                            <input type="text" name="left_title" x-model="loginLeftTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Subtitle</label>
+                                            <textarea name="left_subtitle" x-model="loginLeftSubtitle" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all"></textarea>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Title</label>
+                                            <input type="text" name="right_title" x-model="loginRightTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Subtitle</label>
+                                            <input type="text" name="right_subtitle" x-model="loginRightSubtitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end pt-3 border-t border-slate-100">
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#005bc0] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#004899] transition-all">
+                                            <span class="material-symbols-outlined text-xs">save</span>
+                                            Save Login Content
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Preview (Right Col) -->
+                            <div class="xl:col-span-5 space-y-3">
+                                <span class="block text-[8px] font-black text-slate-400 uppercase tracking-[0.25em] px-2">Login Page Mockup</span>
+                                <div class="bg-white rounded-3xl border border-slate-200 shadow-md overflow-hidden preview-browser-frame">
+                                    <div class="bg-slate-50 border-b border-slate-200 px-3 py-1.5 text-[8px] text-slate-400 font-bold">
+                                        laundryan.com/login
+                                    </div>
+                                    <div class="flex h-48">
+                                        <div class="w-5/12 bg-[#005bc0] p-3 flex flex-col justify-center text-white">
+                                            <h5 class="text-[8px] font-black leading-tight" x-text="loginLeftTitle"></h5>
+                                            <p class="text-[6px] text-white/70 mt-1 leading-normal" x-text="loginLeftSubtitle"></p>
+                                        </div>
+                                        <div class="w-7/12 p-3 flex flex-col justify-center bg-white">
+                                            <h5 class="text-[8px] font-black text-slate-800" x-text="loginRightTitle"></h5>
+                                            <p class="text-[6px] text-slate-400" x-text="loginRightSubtitle"></p>
+                                            <div class="mt-2 space-y-1">
+                                                <div class="h-2 bg-slate-100 rounded"></div>
+                                                <div class="h-2 bg-slate-100 rounded"></div>
+                                                <div class="h-4 bg-[#005bc0] rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Register settings -->
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                            <!-- Editor Form (Left Col) -->
+                            <div class="xl:col-span-7 bg-white rounded-3xl border border-slate-200/70 p-5 md:p-6 space-y-4 shadow-sm">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <div>
+                                        <h4 class="text-sm font-black text-slate-800 uppercase tracking-tight">Registration Page Settings</h4>
+                                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Customize titles and subtitles on the sign-up page</p>
+                                    </div>
+                                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#005bc0] flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-base">person_add</span>
+                                    </div>
+                                </div>
+
+                                @if(session('updated_key') === 'register')
+                                    <div x-data="{ showBadge: true }" x-show="showBadge" x-init="setTimeout(() => showBadge = false, 4000)" 
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                                        x-transition:leave="transition ease-in duration-300"
+                                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                                        x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-500/20 text-emerald-800 rounded-xl text-[10px] font-bold shadow-sm mb-3">
+                                        <span class="material-symbols-outlined text-[14px] font-black text-emerald-600">check_circle</span>
+                                        <span>Registration Settings Updated Successfully</span>
+                                    </div>
+                                @endif
+
+                                <form action="{{ route('admin.landing-page.update', 'register') }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="section_subtype" value="register">
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Title</label>
+                                            <input type="text" name="left_title" x-model="registerLeftTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Subtitle</label>
+                                            <textarea name="left_subtitle" x-model="registerLeftSubtitle" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all"></textarea>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Title</label>
+                                            <input type="text" name="right_title" x-model="registerRightTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Subtitle</label>
+                                            <input type="text" name="right_subtitle" x-model="registerRightSubtitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end pt-3 border-t border-slate-100">
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#005bc0] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#004899] transition-all">
+                                            <span class="material-symbols-outlined text-xs">save</span>
+                                            Save Register Content
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Preview (Right Col) -->
+                            <div class="xl:col-span-5 space-y-3">
+                                <span class="block text-[8px] font-black text-slate-400 uppercase tracking-[0.25em] px-2">Register Page Mockup</span>
+                                <div class="bg-white rounded-3xl border border-slate-200 shadow-md overflow-hidden preview-browser-frame">
+                                    <div class="bg-slate-50 border-b border-slate-200 px-3 py-1.5 text-[8px] text-slate-400 font-bold">
+                                        laundryan.com/register
+                                    </div>
+                                    <div class="flex h-48">
+                                        <div class="w-5/12 bg-[#005bc0] p-3 flex flex-col justify-center text-white">
+                                            <h5 class="text-[8px] font-black leading-tight" x-text="registerLeftTitle"></h5>
+                                            <p class="text-[6px] text-white/70 mt-1 leading-normal" x-text="registerLeftSubtitle"></p>
+                                        </div>
+                                        <div class="w-7/12 p-3 flex flex-col justify-center bg-white">
+                                            <h5 class="text-[8px] font-black text-slate-800" x-text="registerRightTitle"></h5>
+                                            <p class="text-[6px] text-slate-400" x-text="registerRightSubtitle"></p>
+                                            <div class="mt-2 space-y-1">
+                                                <div class="h-2 bg-slate-100 rounded"></div>
+                                                <div class="h-2 bg-slate-100 rounded"></div>
+                                                <div class="h-4 bg-[#005bc0] rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Forgot Password settings -->
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+                            <!-- Editor Form (Left Col) -->
+                            <div class="xl:col-span-7 bg-white rounded-3xl border border-slate-200/70 p-5 md:p-6 space-y-4 shadow-sm">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                                    <div>
+                                        <h4 class="text-sm font-black text-slate-800 uppercase tracking-tight">Forgot Password Settings</h4>
+                                        <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Customize titles and subtitles on the password recovery page</p>
+                                    </div>
+                                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#005bc0] flex items-center justify-center shadow-sm">
+                                        <span class="material-symbols-outlined text-base">lock_reset</span>
+                                    </div>
+                                </div>
+
+                                @if(session('updated_key') === 'forgot_password')
+                                    <div x-data="{ showBadge: true }" x-show="showBadge" x-init="setTimeout(() => showBadge = false, 4000)" 
+                                        x-transition:enter="transition ease-out duration-300"
+                                        x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                        x-transition:enter-end="opacity-100 transform translate-y-0"
+                                        x-transition:leave="transition ease-in duration-300"
+                                        x-transition:leave-start="opacity-100 transform translate-y-0"
+                                        x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                        class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-500/20 text-emerald-800 rounded-xl text-[10px] font-bold shadow-sm mb-3">
+                                        <span class="material-symbols-outlined text-[14px] font-black text-emerald-600">check_circle</span>
+                                        <span>Forgot Password Settings Updated Successfully</span>
+                                    </div>
+                                @endif
+
+                                <form action="{{ route('admin.landing-page.update', 'forgot_password') }}" method="POST" class="space-y-4">
+                                    @csrf
+                                    <input type="hidden" name="section_subtype" value="forgot_password">
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Title</label>
+                                            <input type="text" name="left_title" x-model="forgotPasswordLeftTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Left Branding Subtitle</label>
+                                            <textarea name="left_subtitle" x-model="forgotPasswordLeftSubtitle" rows="2" class="w-full rounded-xl border border-slate-200 p-3 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all"></textarea>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Title</label>
+                                            <input type="text" name="right_title" x-model="forgotPasswordRightTitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Right Form Subtitle</label>
+                                            <input type="text" name="right_subtitle" x-model="forgotPasswordRightSubtitle" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 bg-white focus:outline-none focus:border-[#005bc0] focus:ring-2 focus:ring-[#005bc0]/10 shadow-sm transition-all">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex justify-end pt-3 border-t border-slate-100">
+                                        <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#005bc0] text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#004899] transition-all">
+                                            <span class="material-symbols-outlined text-xs">save</span>
+                                            Save Forgot Password Content
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Preview (Right Col) -->
+                            <div class="xl:col-span-5 space-y-3">
+                                <span class="block text-[8px] font-black text-slate-400 uppercase tracking-[0.25em] px-2">Forgot Password Mockup</span>
+                                <div class="bg-white rounded-3xl border border-slate-200 shadow-md overflow-hidden preview-browser-frame">
+                                    <div class="bg-slate-50 border-b border-slate-200 px-3 py-1.5 text-[8px] text-slate-400 font-bold">
+                                        laundryan.com/password/reset
+                                    </div>
+                                    <div class="flex h-48">
+                                        <div class="w-5/12 bg-[#005bc0] p-3 flex flex-col justify-center text-white">
+                                            <h5 class="text-[8px] font-black leading-tight" x-text="forgotPasswordLeftTitle"></h5>
+                                            <p class="text-[6px] text-white/70 mt-1 leading-normal" x-text="forgotPasswordLeftSubtitle"></p>
+                                        </div>
+                                        <div class="w-7/12 p-3 flex flex-col justify-center bg-white">
+                                            <h5 class="text-[8px] font-black text-slate-800" x-text="forgotPasswordRightTitle"></h5>
+                                            <p class="text-[6px] text-slate-400 mb-1" x-text="forgotPasswordRightSubtitle"></p>
+                                            <div class="mt-2 space-y-1">
+                                                <div class="h-2 bg-slate-100 rounded"></div>
+                                                <div class="h-4 bg-[#005bc0] rounded"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -50,8 +50,8 @@
                 <a href="/" class="inline-block mb-12 hover:opacity-80 transition-opacity">
                     <x-application-logo class="h-16 w-auto fill-current text-white" />
                 </a>
-                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">Don't Worry, We've Got You.</h1>
-                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">It happens to the best of us. Let's get you back into your account so you can continue enjoying premium care.</p>
+                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">{{ $settings['forgot_password']['left_title'] ?? 'Reset Your Password.' }}</h1>
+                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">{{ $settings['forgot_password']['left_subtitle'] ?? 'No worries — enter your email and we\'ll send a secure link to get you back in.' }}</p>
                 
                 <div class="flex items-center gap-6 pt-10 border-t border-white/20">
                     <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm">
@@ -76,9 +76,9 @@
                 </div>
 
                 <div class="mb-10 text-center lg:text-left">
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Reset Password</h2>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">{{ $settings['forgot_password']['right_title'] ?? 'Forgot Password?' }}</h2>
                     <p class="text-gray-500 text-base sm:text-lg leading-relaxed">
-                        Forgot your password? No problem. Just let us know your email address and we will email you a password reset link.
+                        {{ $settings['forgot_password']['right_subtitle'] ?? 'We\'ll email you a link to reset your password.' }}
                     </p>
                 </div>
 

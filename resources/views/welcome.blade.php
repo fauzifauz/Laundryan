@@ -487,19 +487,55 @@
         </section>
 
         <!-- Location Section -->
+        @php
+            $mapIframe = $settings['location']['map_iframe'] ?? '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126748.77506686!2d106.4774561!3d-6.1632146!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fb5f1f282bf1%3A0xa3ca0c14b3e07736!2sKabupaten%20Tangerang%2C%20Banten!5e0!3m2!1sid!2sid!4v1700000000002!5m2!1sid!2sid" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+
+            // Extract src URL from iframe tag
+            $mapUrl = '';
+            if (preg_match('/src=["\']([^"\']+)["\']/', $mapIframe, $matches)) {
+                $mapUrl = $matches[1];
+            }
+
+            // Extract coordinates from Google Maps embed pb token (supports negative values)
+            // !2d = longitude, !3d = latitude
+            $latitude  = null;
+            $longitude = null;
+            if (preg_match('/[!,]2d(-?[0-9]+\.?[0-9]*)/', $mapUrl, $lonMatch) &&
+                preg_match('/[!,]3d(-?[0-9]+\.?[0-9]*)/', $mapUrl, $latMatch)) {
+                $longitude = $lonMatch[1];
+                $latitude  = $latMatch[1];
+            }
+
+            $address = $settings['footer']['address'] ?? 'Kabupaten Tangerang, Banten';
+
+            if ($latitude !== null && $longitude !== null) {
+                // Use coordinates for precise pin
+                $googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($latitude . ',' . $longitude);
+            } else {
+                // Fallback to address text search
+                $googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($address);
+            }
+        @endphp
         <section class="py-16 sm:py-24 px-6 md:px-12 lg:px-24 bg-white" id="location">
             <div class="max-w-7xl mx-auto">
                 <div class="text-center mb-12 sm:mb-16">
                     <span class="text-primary font-bold tracking-widest uppercase text-[10px] sm:text-xs">{{ $settings['location']['subtitle'] ?? 'Our Outlet' }}</span>
-                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-on-surface mt-4">{{ $settings['location']['heading'] ?? 'Visit Our Location' }}</h2>
+                    <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-on-surface mt-4 mb-4">{{ $settings['location']['heading'] ?? 'Visit Our Location' }}</h2>
+                    <p class="text-on-surface-variant max-w-xl mx-auto mb-6 text-sm sm:text-base flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-xl">location_on</span>
+                        <span>{{ $address }}</span>
+                    </p>
+                    <div class="flex justify-center mb-8">
+                        <a href="{{ $googleMapsLink }}" target="_blank" class="inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-full font-bold shadow-lg hover:scale-105 active:scale-95 transition-all text-xs uppercase tracking-wider font-sans">
+                            <span class="material-symbols-outlined text-sm">map</span>
+                            Visit Our Location
+                        </a>
+                    </div>
                 </div>
 
                 <div class="rounded-[2rem] overflow-hidden shadow-2xl border-8 border-white ring-1 ring-gray-100 h-[400px] sm:h-[500px] relative">
                     <div class="w-full h-full [&>iframe]:w-full [&>iframe]:h-full">
-                        <iframe 
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.1!2d106.5602886!3d-6.1664983!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMDknNTkuNCJTIDEwNsKwMzMnMzcuMCJF!5e0!3m2!1sid!2sid!4v1700000000001!5m2!1sid!2sid" 
-                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                        </iframe>
+                        {!! $mapIframe !!}
                     </div>
                 </div>
             </div>
@@ -581,8 +617,6 @@
                         <li><a href="#services" class="text-on-surface-variant hover:text-primary text-sm transition-colors">Wash & Fold</a></li>
                         <li><a href="#services" class="text-on-surface-variant hover:text-primary text-sm transition-colors">Dry Cleaning</a></li>
                         <li><a href="#services" class="text-on-surface-variant hover:text-primary text-sm transition-colors">Steam Ironing</a></li>
-                        <li><a href="#services" class="text-on-surface-variant hover:text-primary text-sm transition-colors">Curtain Cleaning</a></li>
-                        <li><a href="#services" class="text-on-surface-variant hover:text-primary text-sm transition-colors">Leather Care</a></li>
                     </ul>
                 </div>
 

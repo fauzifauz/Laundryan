@@ -91,7 +91,7 @@ class LandingPageSeeder extends Seeder
             'location' => [
                 'heading' => 'Visit Our Location',
                 'subtitle' => 'Our Outlet',
-                'map_iframe' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126920.24170068593!2d106.78918235!3d-6.229728!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f3e945e3fa73%3A0x76135f4730ad5650!2sJakarta%20Selatan%2C%20Kota%20Jakarta%20Selatan%2C%20Daerah%20Khusus%20Ibukota%20Jakarta!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+                'map_iframe' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126748.77506686!2d106.4774561!3d-6.1632146!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69fb5f1f282bf1%3A0xa3ca0c14b3e07736!2sKabupaten%20Tangerang%2C%20Banten!5e0!3m2!1sid!2sid!4v1700000000002!5m2!1sid!2sid" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
             ],
             'faqs' => [
                 'heading' => 'Everything You Need To Know',
@@ -131,7 +131,26 @@ class LandingPageSeeder extends Seeder
                 'instagram_url' => '#',
                 'x_url' => '#',
                 'copyright' => '© 2024 LAUNDRYAN. All rights reserved.'
-            ]
+            ],
+            // ── Authentication Pages Content ──────────────────────────────
+            'login' => [
+                'left_title'      => 'Welcome Back to Laundryan.',
+                'left_subtitle'   => 'Reclaim your time while we handle your garments with the gold standard of cleaning technology.',
+                'right_title'     => 'Sign In',
+                'right_subtitle'  => 'Access your premium laundry dashboard.',
+            ],
+            'register' => [
+                'left_title'      => 'Join the Revolution of Clean.',
+                'left_subtitle'   => 'Create your account today and experience garment care that exceeds expectations, every single time.',
+                'right_title'     => 'Create Account',
+                'right_subtitle'  => 'Experience premium laundry services with ease.',
+            ],
+            'forgot_password' => [
+                'left_title'      => 'Reset Your Password.',
+                'left_subtitle'   => 'No worries — enter your email and we\'ll send a secure link to get you back in.',
+                'right_title'     => 'Forgot Password?',
+                'right_subtitle'  => 'We\'ll email you a link to reset your password.',
+            ],
         ];
 
         foreach ($settings as $key => $content) {

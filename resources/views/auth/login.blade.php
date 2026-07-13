@@ -50,8 +50,8 @@
                 <a href="/" class="inline-block mb-12 hover:opacity-80 transition-opacity">
                     <x-application-logo class="h-16 w-auto fill-current text-white" />
                 </a>
-                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">Welcome Back to Laundryan.</h1>
-                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">Reclaim your time while we handle your garments with the gold standard of cleaning technology.</p>
+                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">{{ $settings['login']['left_title'] ?? 'Welcome Back to Laundryan.' }}</h1>
+                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">{{ $settings['login']['left_subtitle'] ?? 'Reclaim your time while we handle your garments with the gold standard of cleaning technology.' }}</p>
                 
                 <div class="grid grid-cols-2 gap-8 pt-10 border-t border-white/20">
                     <div>
@@ -77,38 +77,49 @@
                 </div>
 
                 <div class="mb-10 text-center lg:text-left">
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Sign In</h2>
-                    <p class="text-gray-500 text-base sm:text-lg">Access your premium laundry dashboard.</p>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">{{ $settings['login']['right_title'] ?? 'Sign In' }}</h2>
+                    <p class="text-gray-500 text-base sm:text-lg">{{ $settings['login']['right_subtitle'] ?? 'Access your premium laundry dashboard.' }}</p>
                 </div>
 
                 <!-- Session Status -->
                 <x-auth-session-status class="mb-4" :status="session('status')" />
 
-                <!-- Global Error Alert -->
-                @if (session('error') || $errors->has('error'))
-                    <div class="mb-8 overflow-hidden rounded-2xl bg-white shadow-xl shadow-red-100/50 border border-red-100 animate-fade-up">
-                        <div class="flex">
-                            <div class="flex-shrink-0 w-1.5 bg-red-500"></div>
-                            <div class="p-4 flex items-center gap-4">
-                                <div class="flex-shrink-0 w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-red-500 text-2xl">warning</span>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-bold text-red-900 mb-0.5">Security Alert</p>
-                                    <p class="text-xs text-red-600 font-medium leading-relaxed">
-                                        {{ session('error') ?? $errors->first('error') }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endif
+                @php
+                    $errorMessage = session('error') ?? $errors->first('error');
+                    $isLockout = $errorMessage && (
+                        str_contains(strtolower($errorMessage), 'too many login attempts') ||
+                        str_contains(strtolower($errorMessage), 'locked') ||
+                        str_contains(strtolower($errorMessage), 'throttle')
+                    );
+                @endphp
 
                 <form method="POST" action="{{ route('login') }}" class="space-y-6" x-data="{ loading: false }" @submit="loading = true">
                     @csrf
 
                     <!-- Email Address -->
                     <div class="space-y-1">
+                        {{-- Brute Force / Lockout Alert — shown above the "Email Address" label --}}
+                        @if ($isLockout)
+                            <div class="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 mb-2 animate-fade-up">
+                                <div class="flex-shrink-0 w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-red-600 text-[18px]">gpp_bad</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-black text-red-800 uppercase tracking-wider mb-0.5 flex items-center gap-1.5">
+                                        Security Alert
+                                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                                    </p>
+                                    <p class="text-xs text-red-700 font-semibold leading-snug">{{ $errorMessage }}</p>
+                                </div>
+                            </div>
+                        @elseif ($errorMessage && !$isLockout)
+                            {{-- Other global errors (e.g. google-only account, inactive) --}}
+                            <div class="flex items-center gap-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 mb-2 animate-fade-up">
+                                <span class="material-symbols-outlined text-amber-600 text-xl flex-shrink-0">warning</span>
+                                <p class="text-xs text-amber-800 font-semibold leading-snug">{{ $errorMessage }}</p>
+                            </div>
+                        @endif
+
                         <label for="email" class="text-sm font-semibold text-gray-700 ml-1">Email Address</label>
                         <div class="relative group">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 group-focus-within:text-primary transition-colors">mail</span>
