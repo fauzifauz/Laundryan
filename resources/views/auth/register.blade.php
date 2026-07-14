@@ -50,8 +50,8 @@
                 <a href="/" class="inline-block mb-12 hover:opacity-80 transition-opacity">
                     <x-application-logo class="h-16 w-auto fill-current text-white" />
                 </a>
-                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">Join the Revolution of Clean.</h1>
-                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">Create your account today and experience garment care that exceeds expectations, every single time.</p>
+                <h1 class="text-4xl xl:text-6xl font-extrabold mb-8 leading-tight tracking-tight">{{ $settings['register']['left_title'] ?? 'Join the Revolution of Clean.' }}</h1>
+                <p class="text-white/80 text-lg xl:text-xl leading-relaxed mb-12">{{ $settings['register']['left_subtitle'] ?? 'Create your account today and experience garment care that exceeds expectations, every single time.' }}</p>
                 
                 <div class="space-y-6 pt-10 border-t border-white/20">
                     <div class="flex items-center gap-5">
@@ -81,8 +81,8 @@
                 </div>
 
                 <div class="mb-10 text-center lg:text-left">
-                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">Create Account</h2>
-                    <p class="text-gray-500 text-base sm:text-lg">Experience premium laundry services with ease.</p>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">{{ $settings['register']['right_title'] ?? 'Create Account' }}</h2>
+                    <p class="text-gray-500 text-base sm:text-lg">{{ $settings['register']['right_subtitle'] ?? 'Experience premium laundry services with ease.' }}</p>
                 </div>
 
                 <form method="POST" action="{{ route('register') }}" class="space-y-5">

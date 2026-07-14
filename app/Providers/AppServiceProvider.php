@@ -34,5 +34,10 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\ItemType::observe(\App\Observers\ItemTypeObserver::class);
         \App\Models\Tax::observe(\App\Observers\TaxObserver::class);
         \App\Models\LandingPageSetting::observe(\App\Observers\LandingPageSettingObserver::class);
+
+        // Share landing page settings globally with welcome and auth views
+        view()->composer(['welcome', 'auth.login', 'auth.register', 'auth.forgot-password', 'layouts.navigation'], function ($view) {
+            $view->with('settings', \App\Models\LandingPageSetting::all()->pluck('content', 'key'));
+        });
     }
 }

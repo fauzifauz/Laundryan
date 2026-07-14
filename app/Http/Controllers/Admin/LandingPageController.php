@@ -110,7 +110,10 @@ class LandingPageController extends Controller
             'footer_cta' => 'Footer CTA',
             'site' => 'Brand Identity',
             'contact' => 'Contact Details',
-            'socials' => 'Social Media'
+            'socials' => 'Social Media',
+            'login' => 'Login Page Settings',
+            'register' => 'Registration Page Settings',
+            'forgot_password' => 'Forgot Password Settings'
         ];
 
         $displayName = $names[$updatedKey] ?? ucfirst($key);
