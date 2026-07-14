@@ -126,13 +126,17 @@ class DashboardController extends Controller
         $pickupCourierHistory  = $pickupCouriers->map(fn($c)  => $formatCourier($c, 'Kurir Pickup', 'pickup'))->values();
         $deliveryCourierHistory = $deliveryCouriers->map(fn($c) => $formatCourier($c, 'Kurir Delivery', 'delivery'))->values();
 
+        // Determine whether to show the onboarding tour (set by AuthenticatedSessionController on login)
+        $showOnboarding = session('show_onboarding', false);
+
         return view('dashboard', compact(
             'activeOrdersCount',
             'completedOrdersCount',
             'totalSpending',
             'activeOrders',
             'pickupCourierHistory',
-            'deliveryCourierHistory'
+            'deliveryCourierHistory',
+            'showOnboarding'
         ));
     }
 }

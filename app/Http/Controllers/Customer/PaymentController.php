@@ -133,7 +133,7 @@ class PaymentController extends Controller
                 ]);
             }
 
-            return redirect()->back()->with('payment_success_popup', 'Payment Successful! Your transfer proof has been verified and your order has been moved to the Pickup queue.');
+            return redirect()->route('customer.orders.show', $order->id)->with('success', 'Payment Successful! Your transfer proof has been verified and your order has been moved to the Pickup queue.')->with('payment_success_popup', 'Payment Successful! Your transfer proof has been verified and your order has been moved to the Pickup queue.');
         }
 
         return redirect()->back()->withErrors(['proof_payment' => 'Failed to upload payment proof. Please try again.']);
@@ -201,6 +201,17 @@ class PaymentController extends Controller
             ]);
         }
 
-        return redirect()->route('customer.orders.show', $order->id)->with('payment_success_popup', 'QRIS Payment via Stripe Simulation Successful! Your order status has been updated to Waiting Pickup.');
+        return redirect()->route('customer.orders.show', $order->id)
+            ->with('success', 'QRIS Payment Successful! Your order status has been updated to Waiting Pickup.')
+            ->with('payment_success_popup', 'QRIS Payment via Stripe Simulation Successful! Your order status has been updated to Waiting Pickup.');
+    }
+
+    public function qrisSimulationFail(Order $order)
+    {
+        if ($order->customer_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return redirect()->route('customer.orders.show', $order->id)->with('error', 'QRIS Payment via Stripe Simulation failed.');
     }
 }

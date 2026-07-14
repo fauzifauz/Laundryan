@@ -119,6 +119,73 @@
         <!-- Material Symbols -->
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         
+        <!-- Global Toast Notifications -->
+        <div id="global-toast"
+            x-data="{ 
+                show: false, 
+                type: 'success', 
+                message: '', 
+                init() {
+                    @if(session('success') || session('payment_success_popup'))
+                        this.trigger('success', '{{ session('success') ?: session('payment_success_popup') }}');
+                    @elseif(session('error'))
+                        this.trigger('error', '{{ session('error') }}');
+                    @elseif(session('warning'))
+                        this.trigger('warning', '{{ session('warning') }}');
+                    @elseif(session('info'))
+                        this.trigger('info', '{{ session('info') }}');
+                    @elseif($errors->any())
+                        this.trigger('error', '{{ $errors->first() }}');
+                    @endif
+                },
+                trigger(type, msg) {
+                    this.type = type;
+                    this.message = msg;
+                    this.show = true;
+                    setTimeout(() => { this.show = false; }, 5000);
+                }
+            }"
+            x-show="show"
+            x-transition:enter="transform ease-out duration-300 transition"
+            x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+            x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+            x-transition:leave="transition ease-in duration-100"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed top-6 right-6 z-[99999] max-w-sm w-full rounded-3xl p-5 shadow-2xl flex items-center justify-between overflow-hidden border"
+            :class="{
+                'bg-emerald-50 border-emerald-200 text-emerald-800': type === 'success',
+                'bg-rose-50 border-rose-200 text-rose-800': type === 'error',
+                'bg-amber-50 border-amber-200 text-amber-800': type === 'warning',
+                'bg-blue-50 border-blue-200 text-blue-800': type === 'info'
+            }"
+            x-cloak>
+            <div class="flex items-center gap-4 relative z-10">
+                <div class="w-10 h-10 rounded-2xl flex items-center justify-center shadow-inner"
+                    :class="{
+                        'bg-emerald-100/50 border border-emerald-200 text-emerald-600': type === 'success',
+                        'bg-rose-100/50 border border-rose-200 text-rose-600': type === 'error',
+                        'bg-amber-100/50 border border-amber-200 text-amber-600': type === 'warning',
+                        'bg-blue-100/50 border border-blue-200 text-blue-600': type === 'info'
+                    }">
+                    <span class="material-symbols-outlined text-xl" x-text="type === 'success' ? 'check_circle' : (type === 'error' ? 'error' : (type === 'warning' ? 'warning' : 'info'))"></span>
+                </div>
+                <div class="text-left">
+                    <h4 class="font-black text-xs uppercase tracking-wider" x-text="type === 'success' ? 'Success' : (type === 'error' ? 'Error' : (type === 'warning' ? 'Warning' : 'Info'))"></h4>
+                    <p class="text-[11px] font-medium mt-0.5" x-text="message"></p>
+                </div>
+            </div>
+            <button @click="show = false" class="transition-colors p-2 rounded-xl relative z-10"
+                :class="{
+                    'text-emerald-600/60 hover:text-emerald-800 hover:bg-emerald-100/50': type === 'success',
+                    'text-rose-600/60 hover:text-rose-800 hover:bg-rose-100/50': type === 'error',
+                    'text-amber-600/60 hover:text-amber-800 hover:bg-amber-100/50': type === 'warning',
+                    'text-blue-600/60 hover:text-blue-800 hover:bg-blue-100/50': type === 'info'
+                }">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+        </div>
+
         @stack('scripts')
     </body>
 </html>

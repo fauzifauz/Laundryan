@@ -46,10 +46,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // QRIS Simulation routes
         Route::get('/orders/{order}/qris-simulation', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulation'])->name('payment.qris-simulation');
         Route::post('/orders/{order}/qris-simulation/pay', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationPay'])->name('payment.qris-simulation.pay');
+        Route::post('/orders/{order}/qris-simulation/fail', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationFail'])->name('payment.qris-simulation.fail');
 
         // Payment callbacks
         Route::get('/payment/success/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'success'])->name('payment.success');
         Route::get('/payment/cancel/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'cancel'])->name('payment.cancel');
+
+        // Onboarding Tour
+        Route::post('/onboarding/complete', [\App\Http\Controllers\Customer\OnboardingController::class, 'complete'])->name('onboarding.complete');
     });
 });
 
