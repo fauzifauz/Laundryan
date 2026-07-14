@@ -29,6 +29,7 @@ return new class extends Migration
             $table->enum('role', ['admin', 'karyawan', 'kurir', 'pelanggan'])->default('pelanggan');
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->rememberToken();
+            $table->timestamp('onboarding_completed_at')->nullable();
             $table->timestamps();
         });
 
