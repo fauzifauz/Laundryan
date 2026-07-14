@@ -373,27 +373,31 @@
                         Staff Live Chat
                     </h3>
                     <div class="flex-1 overflow-y-auto space-y-3 my-4 pr-2 custom-scrollbar" id="chat-scroller">
+                        @php
+                            $chatRoleBubbleConfig = [
+                                'admin'     => ['bg' => 'bg-blue-50 text-blue-900 border border-blue-200/65',   'badge' => 'text-blue-600 bg-blue-100/50',   'role_name' => 'Admin'],
+                                'karyawan'  => ['bg' => 'bg-amber-50 text-amber-900 border border-amber-200/65', 'badge' => 'text-amber-600 bg-amber-100/50', 'role_name' => 'Staff'],
+                                'kurir'     => ['bg' => 'bg-purple-50 text-purple-900 border border-purple-200/65','badge' => 'text-purple-600 bg-purple-100/50','role_name' => 'Courier'],
+                                'pelanggan' => ['bg' => 'bg-emerald-50 text-emerald-900 border border-emerald-200/65','badge' => 'text-emerald-600 bg-emerald-100/50','role_name' => 'Customer'],
+                            ];
+                        @endphp
                         @forelse($order->messages as $msg)
-                            <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                                <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
-                                    @php
-                                        $roleColors = match($msg->sender->role) {
-                                            'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
-                                            'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                            'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                            default => 'bg-blue-100 text-blue-700 border-blue-200',
-                                        };
-                                        $isMine = $msg->sender_id === auth()->id();
-                                    @endphp
-                                    <p class="text-[9px] mb-1 font-black flex items-center gap-1">
-                                        <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
-                                        <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
-                                            {{ $msg->sender->role }}
+                            @php
+                                $isMine   = $msg->sender_id === auth()->id();
+                                $msgRole  = strtolower($msg->sender->role ?? 'pelanggan');
+                                $rCfg     = $chatRoleBubbleConfig[$msgRole] ?? $chatRoleBubbleConfig['pelanggan'];
+                            @endphp
+                            <div class="flex flex-col {{ $isMine ? 'items-end' : 'items-start' }} space-y-1">
+                                <div class="max-w-[85%] px-4 py-3 rounded-2xl text-xs font-bold shadow-sm {{ $rCfg['bg'] }} {{ $isMine ? 'rounded-tr-none' : 'rounded-tl-none' }}">
+                                    <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                        <span class="text-[10px] font-black uppercase text-gray-800">{{ $msg->sender->name }}</span>
+                                        <span class="text-[8px] font-black uppercase px-1.5 py-0.5 rounded {{ $rCfg['badge'] }} tracking-wider">
+                                            {{ $rCfg['role_name'] }}
                                         </span>
-                                    </p>
-                                    <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
+                                    </div>
+                                    <p class="leading-relaxed text-[11px] font-semibold">{{ $msg->message }}</p>
                                 </div>
-                                <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
+                                <span class="text-[8px] text-gray-400 uppercase font-bold px-1">{{ $msg->created_at->diffForHumans() }}</span>
                             </div>
                         @empty
                             <p class="text-center text-gray-400 py-8 italic text-xs">No messages yet. Ask anything about your order!</p>

@@ -214,8 +214,8 @@
                                 <div class="flex items-center gap-3">
                                     <span class="material-symbols-outlined text-gray-500">qr_code_2</span>
                                     <div>
-                                        <p class="text-xs font-extrabold text-gray-800">QRIS (Stripe Simulation)</p>
-                                        <p class="text-[9px] text-gray-400 mt-0.5">Scan QR code for instant payment</p>
+                                        <p class="text-xs font-extrabold text-gray-800">QRIS</p>
+                                        <p class="text-[9px] text-gray-400 mt-0.5">Stripe Simulation</p>
                                     </div>
                                 </div>
                             </label>

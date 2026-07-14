@@ -53,6 +53,8 @@ class OrderController extends Controller
             $statusFilter = $request->input('status');
             if ($statusFilter === 'active_processing') {
                 $query->whereNotIn('status', ['completed', 'cancelled']);
+            } elseif ($statusFilter === 'in_transit') {
+                $query->whereIn('status', ['picked_up', 'in_transit_to_laundry', 'delivering']);
             } else {
                 $query->where('status', $statusFilter);
             }
@@ -66,17 +68,21 @@ class OrderController extends Controller
             })->whereNotIn('status', ['completed', 'cancelled']);
         }
 
-        // Filter period (harian/mingguan/bulanan/tahunan → Daily/Weekly/Monthly/Yearly)
+        // Filter period (Hari, Minggu 1-4, Bulan 1-12, Tahun)
         $filterPeriod = $request->input('filter_period', 'all');
         if ($filterPeriod === 'harian') {
-            $query->whereDate('created_at', Carbon::today());
+            $dateVal = $request->input('date_val', Carbon::today()->toDateString());
+            $query->whereDate('created_at', $dateVal);
         } elseif ($filterPeriod === 'mingguan') {
-            $query->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $weekVal = (int) $request->input('week_val', 1); // 1-4 weeks
+            $query->where('created_at', '>=', Carbon::now()->subWeeks($weekVal));
         } elseif ($filterPeriod === 'bulanan') {
-            $query->whereMonth('created_at', Carbon::now()->month)
+            $monthVal = (int) $request->input('month_val', Carbon::now()->month);
+            $query->whereMonth('created_at', $monthVal)
                   ->whereYear('created_at', Carbon::now()->year);
         } elseif ($filterPeriod === 'tahunan') {
-            $query->whereYear('created_at', Carbon::now()->year);
+            $yearVal = (int) $request->input('year_val', Carbon::now()->year);
+            $query->whereYear('created_at', $yearVal);
         }
 
         $orders = $query->paginate(10)->withQueryString();
@@ -188,19 +194,83 @@ class OrderController extends Controller
 
                 $order->update(['stripe_session_id' => $session->id]);
 
-                // Create a Payment record
-                Payment::create([
-                    'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
-                    'order_id' => $order->id,
-                    'amount' => $order->total_price,
-                    'payment_method' => 'stripe',
-                    'status' => 'pending',
-                    'payment_date' => now(),
-                ]);
+                // Update or create a Payment record safely
+                $payment = Payment::where('order_id', $order->id)->first();
+                if ($payment) {
+                    $payment->update([
+                        'amount' => $order->total_price,
+                        'payment_method' => 'stripe',
+                        'status' => 'pending',
+                        'payment_date' => now(),
+                    ]);
+                } else {
+                    Payment::create([
+                        'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                        'order_id' => $order->id,
+                        'amount' => $order->total_price,
+                        'payment_method' => 'stripe',
+                        'status' => 'pending',
+                        'payment_date' => now(),
+                    ]);
+                }
 
                 return redirect($session->url);
             } catch (\Exception $e) {
                 // If stripe fails (e.g. key is empty), fallback to bank transfer
+                $payment = Payment::where('order_id', $order->id)->first();
+                if ($payment) {
+                    $payment->update([
+                        'amount' => $order->total_price,
+                        'payment_method' => 'transfer',
+                        'status' => 'pending',
+                        'payment_date' => now(),
+                    ]);
+                } else {
+                    Payment::create([
+                        'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                        'order_id' => $order->id,
+                        'amount' => $order->total_price,
+                        'payment_method' => 'transfer',
+                        'status' => 'pending',
+                        'payment_date' => now(),
+                    ]);
+                }
+                $order->update(['payment_method' => 'bank_transfer']);
+                return redirect()->route('customer.orders.show', $order->id)->with('warning', 'Online payment system is currently unavailable. Redirected to manual Bank Transfer.');
+            }
+        } elseif ($request->payment_method === 'qris') {
+            // QRIS Payment Method (Stripe QRIS Simulation)
+            $payment = Payment::where('order_id', $order->id)->first();
+            if ($payment) {
+                $payment->update([
+                    'amount' => $order->total_price,
+                    'payment_method' => 'qris',
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                ]);
+            } else {
+                Payment::create([
+                    'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
+                    'order_id' => $order->id,
+                    'amount' => $order->total_price,
+                    'payment_method' => 'qris',
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                ]);
+            }
+
+            return redirect()->route('customer.payment.qris-simulation', $order->id);
+        } else {
+            // Manual Bank Transfer
+            $payment = Payment::where('order_id', $order->id)->first();
+            if ($payment) {
+                $payment->update([
+                    'amount' => $order->total_price,
+                    'payment_method' => 'transfer',
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                ]);
+            } else {
                 Payment::create([
                     'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
                     'order_id' => $order->id,
@@ -209,31 +279,7 @@ class OrderController extends Controller
                     'status' => 'pending',
                     'payment_date' => now(),
                 ]);
-                $order->update(['payment_method' => 'bank_transfer']);
-                return redirect()->route('customer.orders.show', $order->id)->with('warning', 'Online payment system is currently unavailable. Redirected to manual Bank Transfer.');
             }
-        } elseif ($request->payment_method === 'qris') {
-            // QRIS Payment Method (Stripe QRIS Simulation)
-            Payment::create([
-                'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
-                'order_id' => $order->id,
-                'amount' => $order->total_price,
-                'payment_method' => 'qris',
-                'status' => 'pending',
-                'payment_date' => now(),
-            ]);
-
-            return redirect()->route('customer.payment.qris-simulation', $order->id);
-        } else {
-            // Manual Bank Transfer
-            Payment::create([
-                'payment_code' => 'PAY-' . strtoupper(Str::random(8)),
-                'order_id' => $order->id,
-                'amount' => $order->total_price,
-                'payment_method' => 'transfer',
-                'status' => 'pending',
-                'payment_date' => now(),
-            ]);
 
             return redirect()->route('customer.orders.show', $order->id)->with('success', 'Laundry order successfully created. Please complete bank transfer payment and upload your receipt.');
         }

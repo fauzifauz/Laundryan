@@ -29,7 +29,8 @@
 
         $methodConfig = [
             'cash' => ['label' => 'Cash', 'icon' => 'payments', 'bg' => 'bg-slate-100 text-slate-700'],
-            'transfer' => ['label' => 'Bank Transfer', 'icon' => 'account_balance', 'bg' => 'bg-blue-50 text-blue-700'],
+            'transfer' => ['label' => 'Bank Transfer', 'icon' => 'account_balance_wallet', 'bg' => 'bg-blue-50 text-blue-700'],
+            'bank_transfer' => ['label' => 'Bank Transfer', 'icon' => 'account_balance_wallet', 'bg' => 'bg-blue-50 text-blue-700'],
             'e-wallet' => ['label' => 'E-Wallet', 'icon' => 'account_balance_wallet', 'bg' => 'bg-purple-50 text-purple-700'],
             'stripe' => ['label' => 'Stripe Card', 'icon' => 'credit_card', 'bg' => 'bg-indigo-50 text-indigo-700'],
             'qris' => ['label' => 'QRIS', 'icon' => 'qr_code_2', 'bg' => 'bg-fuchsia-50 text-fuchsia-700']

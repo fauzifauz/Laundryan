@@ -89,6 +89,18 @@ class SocialiteController extends Controller
                 \App\Models\ActivityLog::log('Auth & Security', 'Login from New Device', 'Login detected from new device (' . \App\Models\ActivityLog::parseBrowser($currentUserAgent) . ' / ' . \App\Models\ActivityLog::parseDevice($currentUserAgent) . ')', 'Auth', null, null, null, $user);
             }
 
+            // Determine if onboarding tour should be shown for pelanggan role (same as normal login).
+            // Persisted in DB via onboarding_completed_at so it survives server restarts.
+            if ($user->role === 'pelanggan') {
+                if (is_null($user->onboarding_completed_at)) {
+                    // First-time or never-completed onboarding → show it
+                    session(['show_onboarding' => true]);
+                } else {
+                    // Returning user: onboarding already completed, do not show
+                    session(['show_onboarding' => false]);
+                }
+            }
+
             if ($user->role === 'admin') {
                 return redirect()->intended(route('admin.dashboard', absolute: false));
             } elseif ($user->role === 'karyawan') {

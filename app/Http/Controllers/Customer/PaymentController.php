@@ -34,19 +34,24 @@ class PaymentController extends Controller
             'qris_count' => (clone $basePaymentQuery)->where('payment_method', 'qris')->count(),
             'card_count' => (clone $basePaymentQuery)->where('payment_method', 'stripe')->count(),
             'transfer_count' => (clone $basePaymentQuery)->whereIn('payment_method', ['transfer', 'bank_transfer'])->count(),
+            'total_amount' => (clone $basePaymentQuery)->where('status', 'success')->sum('amount'),
         ];
 
         // Filter by Period
         $period = $request->input('period', 'all');
         if ($period === 'harian' || $period === 'hari') {
-            $query->whereDate('payment_date', Carbon::today());
+            $dateVal = $request->input('date_val', Carbon::today()->toDateString());
+            $query->whereDate('payment_date', $dateVal);
         } elseif ($period === 'mingguan' || $period === 'minggu') {
-            $query->whereBetween('payment_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+            $weekVal = (int) $request->input('week_val', 1); // 1-4 weeks
+            $query->where('payment_date', '>=', Carbon::now()->subWeeks($weekVal));
         } elseif ($period === 'bulanan' || $period === 'bulan') {
-            $query->whereMonth('payment_date', Carbon::now()->month)
+            $monthVal = (int) $request->input('month_val', Carbon::now()->month);
+            $query->whereMonth('payment_date', $monthVal)
                   ->whereYear('payment_date', Carbon::now()->year);
         } elseif ($period === 'tahunan' || $period === 'tahun') {
-            $query->whereYear('payment_date', Carbon::now()->year);
+            $yearVal = (int) $request->input('year_val', Carbon::now()->year);
+            $query->whereYear('payment_date', $yearVal);
         }
 
         // Filter by Status

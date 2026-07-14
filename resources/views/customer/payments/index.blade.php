@@ -11,6 +11,17 @@
 
         <!-- Statistics Grid (KPI Cards) -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Card 0: Total Payment Amount (Nominal) -->
+            <div class="col-span-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-sm flex items-center gap-4 text-white hover:shadow-md transition-all duration-200">
+                <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-2xl text-white">payments</span>
+                </div>
+                <div>
+                    <p class="text-[10px] font-bold text-white/70 uppercase tracking-widest leading-tight">Total Payment Amount</p>
+                    <h3 class="text-2xl font-black mt-0.5">Rp {{ number_format($stats['total_amount'], 0, ',', '.') }}</h3>
+                </div>
+            </div>
+
             <!-- Card 1: Total Payments -->
             <a href="{{ route('customer.payments.index') }}"
                 class="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm flex items-center gap-4 hover:border-gray-300 hover:shadow-md transition-all cursor-pointer group hover:scale-[1.02] duration-200 text-left">
@@ -18,7 +29,7 @@
                     <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
                 </div>
                 <div>
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Total Payments</p>
+                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-tight">Total Transactions</p>
                     <h3 class="text-2xl font-black text-gray-800 mt-0.5">{{ number_format($stats['total_count']) }}</h3>
                 </div>
             </a>
@@ -48,7 +59,7 @@
             </a>
 
             <!-- Card 4: Today's Payments -->
-            <a href="{{ route('customer.payments.index', ['period' => 'harian']) }}"
+            <a href="{{ route('customer.payments.index', ['period' => 'hari']) }}"
                 class="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm flex items-center gap-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group hover:scale-[1.02] duration-200 text-left">
                 <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
                     <span class="material-symbols-outlined text-2xl">today</span>
@@ -60,7 +71,7 @@
             </a>
 
             <!-- Card 5: This Month's Payments -->
-            <a href="{{ route('customer.payments.index', ['period' => 'bulanan']) }}"
+            <a href="{{ route('customer.payments.index', ['period' => 'bulan']) }}"
                 class="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm flex items-center gap-4 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group hover:scale-[1.02] duration-200 text-left">
                 <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-indigo-100 transition-colors">
                     <span class="material-symbols-outlined text-2xl">calendar_month</span>
@@ -109,13 +120,13 @@
         </div>
 
         <!-- Filter Form Container -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-gray-100" x-data="{ period: '{{ request('period', 'all') }}' }">
             <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider mb-4">Filter Transactions</p>
-            <form action="{{ route('customer.payments.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end" x-data="{ period: '{{ request('period', 'all') }}' }">
+            <form action="{{ route('customer.payments.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 
                 <!-- Period Type Selection -->
-                <div class="col-span-12 sm:col-span-6 md:col-span-3">
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Period</label>
+                <div :class="period === 'all' ? 'col-span-12 sm:col-span-6 md:col-span-4' : 'col-span-12 sm:col-span-6 md:col-span-2'">
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Period Type</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
                             <span class="material-symbols-outlined text-sm">calendar_month</span>
@@ -132,7 +143,7 @@
                 </div>
 
                 <!-- Status Filter -->
-                <div class="col-span-12 sm:col-span-6 md:col-span-3">
+                <div :class="period === 'all' ? 'col-span-12 sm:col-span-6 md:col-span-3' : 'col-span-12 sm:col-span-6 md:col-span-2'">
                     <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Status</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
@@ -148,7 +159,7 @@
                 </div>
 
                 <!-- Payment Method Filter -->
-                <div class="col-span-12 sm:col-span-6 md:col-span-3">
+                <div :class="period === 'all' ? 'col-span-12 sm:col-span-6 md:col-span-3' : 'col-span-12 sm:col-span-6 md:col-span-2'">
                     <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Method</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
@@ -164,8 +175,72 @@
                     </div>
                 </div>
 
+                <!-- Dynamic Period Sub-Inputs -->
+                <!-- Hari Sub-Input (Date Picker) -->
+                <div class="col-span-12 sm:col-span-6 md:col-span-4" x-show="period === 'hari'" x-cloak>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tanggal</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-sm">event</span>
+                        </span>
+                        <input type="date" name="date_val" value="{{ request('date_val', now()->toDateString()) }}"
+                            class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3">
+                    </div>
+                </div>
+
+                <!-- Minggu Sub-Input (1-4 minggu select) -->
+                <div class="col-span-12 sm:col-span-6 md:col-span-4" x-show="period === 'minggu'" x-cloak>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Rentang Minggu</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-sm">date_range</span>
+                        </span>
+                        <select name="week_val"
+                            class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 appearance-none">
+                            <option value="1" {{ request('week_val') == '1' ? 'selected' : '' }}>1 Minggu Terakhir</option>
+                            <option value="2" {{ request('week_val') == '2' ? 'selected' : '' }}>2 Minggu Terakhir</option>
+                            <option value="3" {{ request('week_val') == '3' ? 'selected' : '' }}>3 Minggu Terakhir</option>
+                            <option value="4" {{ request('week_val') == '4' ? 'selected' : '' }}>4 Minggu Terakhir</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bulan Sub-Input (1-12 select) -->
+                <div class="col-span-12 sm:col-span-6 md:col-span-4" x-show="period === 'bulan'" x-cloak>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Bulan</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-sm">calendar_view_month</span>
+                        </span>
+                        <select name="month_val"
+                            class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 appearance-none">
+                            @for ($m = 1; $m <= 12; $m++)
+                                <option value="{{ $m }}" {{ request('month_val', now()->month) == $m ? 'selected' : '' }}>
+                                    {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                                </option>
+                            @endfor
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tahun Sub-Input (select) -->
+                <div class="col-span-12 sm:col-span-6 md:col-span-4" x-show="period === 'tahun'" x-cloak>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tahun</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                            <span class="material-symbols-outlined text-sm">calendar_today</span>
+                        </span>
+                        <select name="year_val"
+                            class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 appearance-none">
+                            @for ($y = now()->year; $y >= now()->year - 4; $y--)
+                                <option value="{{ $y }}" {{ request('year_val', now()->year) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                            @endfor
+                        </select>
+                    </div>
+                </div>
+
                 <!-- Action buttons -->
-                <div class="col-span-12 sm:col-span-6 md:col-span-3 flex gap-2">
+                <div class="col-span-12 sm:col-span-6 md:col-span-2 flex gap-2">
                     <button type="submit"
                         class="flex-1 py-3 bg-brand hover:bg-blue-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-blue-200 uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all">
                         <span class="material-symbols-outlined text-[16px]">filter_alt</span> Filter
@@ -176,42 +251,6 @@
                         <span class="material-symbols-outlined text-[16px]">restart_alt</span>
                     </a>
                 </div>
-
-                <!-- Specific Date Input -->
-                <div x-show="period === 'hari'" class="col-span-12 md:col-span-4 mt-2" x-transition x-cloak>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tanggal</label>
-                    <input type="date" name="date_val" value="{{ request('date_val') }}"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 px-4">
-                </div>
-
-                <!-- Specific Week Input -->
-                <div x-show="period === 'minggu'" class="col-span-12 md:col-span-4 mt-2" x-transition x-cloak>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Minggu</label>
-                    <input type="week" name="week_val" value="{{ request('week_val') }}"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 px-4">
-                </div>
-
-                <!-- Specific Month Input -->
-                <div x-show="period === 'bulan'" class="col-span-12 md:col-span-4 mt-2" x-transition x-cloak>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Bulan</label>
-                    <input type="month" name="month_val" value="{{ request('month_val') }}"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 px-4">
-                </div>
-
-                <!-- Specific Year Input -->
-                <div x-show="period === 'tahun'" class="col-span-12 md:col-span-4 mt-2" x-transition x-cloak>
-                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tahun</label>
-                    <select name="year_val"
-                        class="w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-brand focus:border-brand py-3 px-4 appearance-none">
-                        @php
-                            $currentYear = date('Y');
-                            $selectedYear = request('year_val', $currentYear);
-                        @endphp
-                        @for($y = $currentYear; $y >= $currentYear - 5; $y--)
-                            <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
             </form>
         </div>
 
@@ -219,6 +258,12 @@
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="p-6 border-b border-gray-50 text-left">
                 <h3 class="text-base font-bold text-gray-900">Transaction Listing</h3>
+            </div>
+
+            <!-- Record count bar -->
+            <div class="flex items-center justify-between px-6 py-4 bg-gray-50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <span>{{ $payments->total() }} Payments Found</span>
+                <span>Page {{ $payments->currentPage() }} / {{ $payments->lastPage() }}</span>
             </div>
 
             <div class="overflow-x-auto">
@@ -320,8 +365,12 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="p-12 text-center text-gray-400 italic font-medium text-xs bg-white">
-                                    No payment transactions recorded yet.
+                                <td colspan="8" class="px-6 py-16 text-center">
+                                    <div class="flex flex-col items-center gap-2 text-gray-400">
+                                        <span class="material-symbols-outlined text-5xl text-gray-200">payments</span>
+                                        <p class="text-sm font-semibold text-gray-800">Transaksi tidak ditemukan</p>
+                                        <p class="text-xs">Silakan sesuaikan filter pencarian atau periode Anda.</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse

@@ -89,149 +89,139 @@
                 </h3>
             </div>
 
-            @forelse($activeOrders->take(3) as $orderIndex => $order)
-                <div class="order-tracking-card transition-all duration-500" data-order-index="{{ $orderIndex }}">
-                <div class="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:bg-white hover:shadow-md duration-300">
-                    <!-- Order Information Header -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center border-b border-gray-100/80 pb-6 mb-6">
-                        <div>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Order Code</span>
-                            <a href="{{ route('customer.orders.show', $order->id) }}" class="text-sm font-black text-brand mt-0.5 hover:underline flex items-center gap-1">
-                                {{ $order->order_code }}
-                                <span class="material-symbols-outlined text-xs">open_in_new</span>
-                            </a>
-                        </div>
-                        <div>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Service & Category</span>
-                            <p class="text-sm font-bold text-gray-800 mt-0.5">{{ $order->service->name }} ({{ $order->itemType->name }})</p>
-                        </div>
-                        <div>
-                            <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Soap & Fragrance</span>
-                            <p class="text-sm font-medium text-gray-600 mt-0.5">{{ $order->soap ?? '-' }} / {{ $order->fragrance ?? '-' }}</p>
-                        </div>
-                        <div class="flex justify-between items-center gap-2">
+            <div class="max-h-[520px] overflow-y-auto pr-2 custom-scrollbar space-y-6">
+                @forelse($activeOrders as $orderIndex => $order)
+                    <div class="order-tracking-card transition-all duration-500" data-order-index="{{ $orderIndex }}">
+                    <div class="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:bg-white hover:shadow-md duration-300">
+                        <!-- Order Information Header -->
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center border-b border-gray-100/80 pb-6 mb-6">
                             <div>
-                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Payment Status</span>
-                                <p class="mt-0.5">
-                                    @if($order->payment_status === 'paid')
-                                        <span class="px-2 py-0.5 text-[9px] font-black bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 uppercase">PAID</span>
-                                    @else
-                                        <span class="px-2 py-0.5 text-[9px] font-black bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200 uppercase">PENDING</span>
-                                    @endif
-                                </p>
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Order Code</span>
+                                <a href="{{ route('customer.orders.show', $order->id) }}" class="text-sm font-black text-brand mt-0.5 hover:underline flex items-center gap-1">
+                                    {{ $order->order_code }}
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                </a>
                             </div>
-                            <a href="{{ route('customer.orders.show', $order->id) }}" class="inline-flex items-center gap-1 bg-brand text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-sm transform active:scale-95 uppercase tracking-wider shrink-0">
-                                Track Details
-                            </a>
+                            <div>
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Service & Category</span>
+                                <p class="text-sm font-bold text-gray-800 mt-0.5">{{ $order->service->name }} ({{ $order->itemType->name }})</p>
+                            </div>
+                            <div>
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Soap & Fragrance</span>
+                                <p class="text-sm font-medium text-gray-600 mt-0.5">{{ $order->soap ?? '-' }} / {{ $order->fragrance ?? '-' }}</p>
+                            </div>
+                            <div class="flex justify-between items-center gap-2">
+                                <div>
+                                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block">Payment Status</span>
+                                    <p class="mt-0.5">
+                                        @if($order->payment_status === 'paid')
+                                            <span class="px-2 py-0.5 text-[9px] font-black bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 uppercase">PAID</span>
+                                        @else
+                                            <span class="px-2 py-0.5 text-[9px] font-black bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200 uppercase">PENDING</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <a href="{{ route('customer.orders.show', $order->id) }}" class="inline-flex items-center gap-1 bg-brand text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-blue-700 transition-all shadow-sm transform active:scale-95 uppercase tracking-wider shrink-0">
+                                    Track Details
+                                </a>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- 9-Stage Timeline -->
-                    @php
-                        $stages = [
-                            ['label' => 'Order Placed', 'statuses' => ['pending_payment', 'waiting_pickup'], 'icon' => 'shopping_cart'],
-                            ['label' => 'Picking Up', 'statuses' => ['picking_up'], 'icon' => 'hail'],
-                            ['label' => 'In Transit', 'statuses' => ['picked_up', 'in_transit_to_laundry'], 'icon' => 'local_shipping'],
-                            ['label' => 'Arrived at Laundry', 'statuses' => ['arrived_at_laundry'], 'icon' => 'storefront'],
-                            ['label' => 'Washing', 'statuses' => ['washing'], 'icon' => 'local_laundry_service'],
-                            ['label' => 'Drying & Ironing', 'statuses' => ['drying_ironing'], 'icon' => 'iron'],
-                            ['label' => 'Packing', 'statuses' => ['packing'], 'icon' => 'inventory_2'],
-                            ['label' => 'Delivering', 'statuses' => ['ready_for_delivery', 'delivering'], 'icon' => 'delivery_dining'],
-                            ['label' => 'Completed', 'statuses' => ['completed'], 'icon' => 'task_alt']
-                        ];
+                        <!-- 9-Stage Timeline -->
+                        @php
+                            $stages = [
+                                ['label' => 'Order Placed', 'statuses' => ['pending_payment', 'waiting_pickup'], 'icon' => 'shopping_cart'],
+                                ['label' => 'Picking Up', 'statuses' => ['picking_up'], 'icon' => 'hail'],
+                                ['label' => 'In Transit', 'statuses' => ['picked_up', 'in_transit_to_laundry'], 'icon' => 'local_shipping'],
+                                ['label' => 'Arrived at Laundry', 'statuses' => ['arrived_at_laundry'], 'icon' => 'storefront'],
+                                ['label' => 'Washing', 'statuses' => ['washing'], 'icon' => 'local_laundry_service'],
+                                ['label' => 'Drying & Ironing', 'statuses' => ['drying_ironing'], 'icon' => 'iron'],
+                                ['label' => 'Packing', 'statuses' => ['packing'], 'icon' => 'inventory_2'],
+                                ['label' => 'Delivering', 'statuses' => ['ready_for_delivery', 'delivering'], 'icon' => 'delivery_dining'],
+                                ['label' => 'Completed', 'statuses' => ['completed'], 'icon' => 'task_alt']
+                            ];
 
-                        $currentStatus = $order->status;
-                        $currentIdx = 0;
-                        foreach($stages as $idx => $stage) {
-                            if (in_array($currentStatus, $stage['statuses'])) {
-                                $currentIdx = $idx;
-                                break;
+                            $currentStatus = $order->status;
+                            $currentIdx = 0;
+                            foreach($stages as $idx => $stage) {
+                                if (in_array($currentStatus, $stage['statuses'])) {
+                                    $currentIdx = $idx;
+                                    break;
+                                }
                             }
-                        }
-                    @endphp
+                        @endphp
 
-                    <div class="relative w-full overflow-x-auto timeline-scroll-container py-6 px-4" id="timeline-container-{{ $order->id }}">
-                        <div class="flex items-center min-w-[950px] relative py-2">
-                            <!-- Connecting Line Background -->
-                            <div class="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200 z-0">
-                                <!-- Active Progress Line -->
-                                <div class="h-full bg-brand rounded-full transition-all duration-1000" style="width: {{ ($currentIdx / 8) * 100 }}%"></div>
-                            </div>
+                        <div class="relative w-full overflow-x-auto timeline-scroll-container py-6 px-4" id="timeline-container-{{ $order->id }}">
+                            <div class="flex items-center min-w-[950px] relative py-2">
+                                <!-- Connecting Line Background -->
+                                <div class="absolute left-10 right-10 top-1/2 -translate-y-1/2 h-0.5 bg-gray-200 z-0">
+                                    <!-- Active Progress Line -->
+                                    <div class="h-full bg-brand rounded-full transition-all duration-1000" style="width: {{ ($currentIdx / 8) * 100 }}%"></div>
+                                </div>
 
-                            <!-- Steps -->
-                            @foreach($stages as $index => $stage)
-                                @php
-                                    $isCompleted = $index < $currentIdx;
-                                    $isActive = $index === $currentIdx;
-                                    $isFuture = $index > $currentIdx;
-                                @endphp
-                                <div class="flex-1 flex flex-col items-center relative z-10 step-item-{{ $order->id }}-{{ $index }} {{ $isActive ? 'step-active' : '' }}" data-index="{{ $index }}">
-                                    <!-- Step Circle -->
-                                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm
-                                        {{ $isCompleted ? 'bg-brand text-white border-2 border-brand' : '' }}
-                                        {{ $isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100 border-2 border-brand scale-110 font-bold' : '' }}
-                                        {{ $isFuture ? 'bg-white text-gray-400 border-2 border-gray-200' : '' }}
-                                    ">
-                                        <span class="material-symbols-outlined text-[20px] {{ $isActive ? 'font-bold' : '' }}">
-                                            {{ $stage['icon'] }}
+                                <!-- Steps -->
+                                @foreach($stages as $index => $stage)
+                                    @php
+                                        $isCompleted = $index < $currentIdx;
+                                        $isActive = $index === $currentIdx;
+                                        $isFuture = $index > $currentIdx;
+                                    @endphp
+                                    <div class="flex-1 flex flex-col items-center relative z-10 step-item-{{ $order->id }}-{{ $index }} {{ $isActive ? 'step-active' : '' }}" data-index="{{ $index }}">
+                                        <!-- Step Circle -->
+                                        <div class="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-500 shadow-sm
+                                            {{ $isCompleted ? 'bg-brand text-white border-2 border-brand' : '' }}
+                                            {{ $isActive ? 'bg-blue-600 text-white ring-4 ring-blue-100 border-2 border-brand scale-110 font-bold' : '' }}
+                                            {{ $isFuture ? 'bg-white text-gray-400 border-2 border-gray-200' : '' }}
+                                        ">
+                                            <span class="material-symbols-outlined text-[20px] {{ $isActive ? 'font-bold' : '' }}">
+                                                {{ $stage['icon'] }}
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Step Label -->
+                                        <span class="text-[11px] font-bold mt-3 text-center transition-colors duration-300 {{ $isActive ? 'text-blue-700 font-extrabold scale-105' : ($isCompleted ? 'text-gray-900 font-semibold' : 'text-gray-400') }}">
+                                            {{ $stage['label'] }}
+                                        </span>
+                                        
+                                        <!-- Status Badge -->
+                                        <span class="text-[9px] mt-1 text-center block">
+                                            @if($isActive)
+                                                <span class="text-brand font-black uppercase tracking-wider bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">Active</span>
+                                            @elseif($isCompleted)
+                                                <span class="text-emerald-600 font-bold uppercase tracking-wider">Done</span>
+                                            @else
+                                                <span class="text-gray-300 font-medium">Pending</span>
+                                            @endif
                                         </span>
                                     </div>
-                                    
-                                    <!-- Step Label -->
-                                    <span class="text-[11px] font-bold mt-3 text-center transition-colors duration-300 {{ $isActive ? 'text-blue-700 font-extrabold scale-105' : ($isCompleted ? 'text-gray-900 font-semibold' : 'text-gray-400') }}">
-                                        {{ $stage['label'] }}
-                                    </span>
-                                    
-                                    <!-- Status Badge -->
-                                    <span class="text-[9px] mt-1 text-center block">
-                                        @if($isActive)
-                                            <span class="text-brand font-black uppercase tracking-wider bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">Active</span>
-                                        @elseif($isCompleted)
-                                            <span class="text-emerald-600 font-bold uppercase tracking-wider">Done</span>
-                                        @else
-                                            <span class="text-gray-300 font-medium">Pending</span>
-                                        @endif
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    @if(in_array($currentStatus, ['picking_up', 'delivering']))
-                        <div class="mt-4 p-4 bg-blue-50/50 border border-blue-100/60 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <span class="material-symbols-outlined text-brand text-2xl animate-bounce">local_shipping</span>
-                                <div class="text-left">
-                                    <p class="text-xs font-bold text-blue-900">Courier is currently handling your order!</p>
-                                    <p class="text-[11px] text-blue-700">Track courier live position and contact them directly on the order details page.</p>
-                                </div>
+                                @endforeach
                             </div>
-                            <a href="{{ route('customer.orders.show', $order->id) }}" class="bg-brand text-white text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow">
-                                Track Live
-                            </a>
                         </div>
-                    @endif
-                </div>
-                </div>{{-- close .order-tracking-card --}}
-            @empty
-                <div class="text-center py-10 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-                    <span class="material-symbols-outlined text-gray-300 text-5xl">inventory_2</span>
-                    <p class="text-gray-500 font-medium mt-3 text-sm">No active orders at the moment.</p>
-                    <a href="{{ route('customer.orders.create') }}" class="text-brand font-bold text-xs mt-2 inline-block hover:underline">Create your first laundry order</a>
-                </div>
-            @endforelse
 
-            @if($activeOrders->count() > 3)
-                <!-- Show more link to My Laundry -->
-                <div class="flex justify-center pt-2">
-                    <a id="toggle-orders-btn"
-                        href="{{ route('customer.orders.index') }}"
-                        class="inline-flex items-center gap-2 text-xs font-black text-brand bg-blue-50 hover:bg-blue-100 border border-blue-100 px-6 py-3 rounded-2xl transition-all duration-300 shadow-sm group">
-                        <span id="toggle-orders-label">Show More</span>
-                        <span class="material-symbols-outlined text-[18px] transition-transform duration-300 group-hover:translate-x-0.5">arrow_forward</span>
-                    </a>
-                </div>
-            @endif
+                        @if(in_array($currentStatus, ['picking_up', 'delivering']))
+                            <div class="mt-4 p-4 bg-blue-50/50 border border-blue-100/60 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-brand text-2xl animate-bounce">local_shipping</span>
+                                    <div class="text-left">
+                                        <p class="text-xs font-bold text-blue-900">Courier is currently handling your order!</p>
+                                        <p class="text-[11px] text-blue-700">Track courier live position and contact them directly on the order details page.</p>
+                                    </div>
+                                </div>
+                                <a href="{{ route('customer.orders.show', $order->id) }}" class="bg-brand text-white text-[11px] font-bold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow">
+                                    Track Live
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                    </div>{{-- close .order-tracking-card --}}
+                @empty
+                    <div class="text-center py-10 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
+                        <span class="material-symbols-outlined text-gray-300 text-5xl">inventory_2</span>
+                        <p class="text-gray-500 font-medium mt-3 text-sm">No active orders at the moment.</p>
+                        <a href="{{ route('customer.orders.create') }}" class="text-brand font-bold text-xs mt-2 inline-block hover:underline">Create your first laundry order</a>
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         <!-- Assigned Courier History -->

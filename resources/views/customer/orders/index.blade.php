@@ -17,6 +17,7 @@
             gridLoading: false,
             showToast: {{ session('success') ? 'true' : 'false' }},
             toastMessage: '{{ session('success', '') }}',
+            period: '{{ request('filter_period', 'all') }}',
             triggerToast(msg) {
                 this.toastMessage = msg;
                 this.showToast = true;
@@ -179,7 +180,7 @@
                 <form action="{{ route('customer.orders.index') }}" method="GET"
                     class="grid grid-cols-1 md:grid-cols-12 gap-4">
                     <!-- Search query -->
-                    <div class="col-span-12 md:col-span-5">
+                    <div :class="period === 'all' ? 'col-span-12 md:col-span-5' : 'col-span-12 md:col-span-3'">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Search Query</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
@@ -187,12 +188,12 @@
                             </span>
                             <input type="text" name="search" value="{{ request('search') }}"
                                 class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3"
-                                placeholder="Search by order code, pickup or delivery address...">
+                                placeholder="Search order code, address...">
                         </div>
                     </div>
 
                     <!-- Order Status select -->
-                    <div class="col-span-12 sm:col-span-6 md:col-span-3">
+                    <div :class="period === 'all' ? 'col-span-12 sm:col-span-6 md:col-span-3' : 'col-span-12 sm:col-span-6 md:col-span-2'">
                         <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Order Status</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
@@ -215,18 +216,82 @@
 
                     <!-- Period select -->
                     <div class="col-span-12 sm:col-span-6 md:col-span-2">
-                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Period</label>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Period Type</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
                                 <span class="material-symbols-outlined text-sm">calendar_month</span>
                             </span>
-                            <select name="filter_period"
+                            <select name="filter_period" x-model="period"
                                 class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
                                 <option value="all" {{ (request('filter_period', 'all')) === 'all' ? 'selected' : '' }}>All Time</option>
-                                <option value="harian" {{ request('filter_period') === 'harian' ? 'selected' : '' }}>Daily</option>
-                                <option value="mingguan" {{ request('filter_period') === 'mingguan' ? 'selected' : '' }}>Weekly</option>
-                                <option value="bulanan" {{ request('filter_period') === 'bulanan' ? 'selected' : '' }}>Monthly</option>
-                                <option value="tahunan" {{ request('filter_period') === 'tahunan' ? 'selected' : '' }}>Yearly</option>
+                                <option value="harian" {{ request('filter_period') === 'harian' ? 'selected' : '' }}>Hari</option>
+                                <option value="mingguan" {{ request('filter_period') === 'mingguan' ? 'selected' : '' }}>Minggu</option>
+                                <option value="bulanan" {{ request('filter_period') === 'bulanan' ? 'selected' : '' }}>Bulan</option>
+                                <option value="tahunan" {{ request('filter_period') === 'tahunan' ? 'selected' : '' }}>Tahun</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Period Sub-Inputs -->
+                    <!-- Hari Sub-Input (Date Picker) -->
+                    <div class="col-span-12 sm:col-span-6 md:col-span-3" x-show="period === 'harian'" x-cloak>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tanggal</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">event</span>
+                            </span>
+                            <input type="date" name="date_val" value="{{ request('date_val', now()->toDateString()) }}"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3">
+                        </div>
+                    </div>
+
+                    <!-- Minggu Sub-Input (1-4 minggu) -->
+                    <div class="col-span-12 sm:col-span-6 md:col-span-3" x-show="period === 'mingguan'" x-cloak>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Rentang Minggu</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">date_range</span>
+                            </span>
+                            <select name="week_val"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
+                                <option value="1" {{ request('week_val') == '1' ? 'selected' : '' }}>1 Minggu Terakhir</option>
+                                <option value="2" {{ request('week_val') == '2' ? 'selected' : '' }}>2 Minggu Terakhir</option>
+                                <option value="3" {{ request('week_val') == '3' ? 'selected' : '' }}>3 Minggu Terakhir</option>
+                                <option value="4" {{ request('week_val') == '4' ? 'selected' : '' }}>4 Minggu Terakhir</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Bulan Sub-Input (1-12) -->
+                    <div class="col-span-12 sm:col-span-6 md:col-span-3" x-show="period === 'bulanan'" x-cloak>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Bulan</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">calendar_view_month</span>
+                            </span>
+                            <select name="month_val"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
+                                @for ($m = 1; $m <= 12; $m++)
+                                    <option value="{{ $m }}" {{ request('month_val', now()->month) == $m ? 'selected' : '' }}>
+                                        {{ date('F', mktime(0, 0, 0, $m, 1)) }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tahun Sub-Input -->
+                    <div class="col-span-12 sm:col-span-6 md:col-span-3" x-show="period === 'tahunan'" x-cloak>
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Pilih Tahun</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 pointer-events-none">
+                                <span class="material-symbols-outlined text-sm">calendar_today</span>
+                            </span>
+                            <select name="year_val"
+                                class="pl-10 w-full bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold focus:ring-blue-500 focus:border-blue-500 py-3 appearance-none">
+                                @for ($y = now()->year; $y >= now()->year - 4; $y--)
+                                    <option value="{{ $y }}" {{ request('year_val', now()->year) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                                @endfor
                             </select>
                         </div>
                     </div>
@@ -469,8 +534,8 @@
                                     <td colspan="6" class="px-6 py-16 text-center">
                                         <div class="flex flex-col items-center gap-2 text-gray-400">
                                             <span class="material-symbols-outlined text-5xl text-gray-200">inbox</span>
-                                            <p class="text-sm font-semibold">No orders found</p>
-                                            <p class="text-xs">You haven't placed any laundry orders matching the active filters.</p>
+                                            <p class="text-sm font-semibold text-gray-800">Order not found</p>
+                                            <p class="text-xs">Please adjust your search filter or period.</p>
                                         </div>
                                     </td>
                                 </tr>

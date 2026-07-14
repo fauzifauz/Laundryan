@@ -51,6 +51,17 @@
                 </div>
             </div>
 
+            <!-- QRIS Barcode Container -->
+            <div class="bg-gray-50 border border-gray-100 rounded-3xl p-6 space-y-4">
+                <p class="text-[10px] font-black uppercase text-gray-400 tracking-wider">Scan QRIS to Simulate Payment</p>
+                <div class="bg-white p-4 rounded-2xl border border-gray-150 inline-block shadow-sm">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ urlencode(route('customer.payment.qris-simulation', $order->id)) }}" 
+                         alt="QRIS Barcode" 
+                         class="w-48 h-48 mx-auto object-contain">
+                </div>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">NMID: ID102030405060</p>
+            </div>
+
             <!-- Simulation Action Block -->
             <div class="space-y-4">
                 <p class="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
