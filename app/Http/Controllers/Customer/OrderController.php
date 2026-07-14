@@ -27,7 +27,7 @@ class OrderController extends Controller
                 $q->whereNull('pickup_courier_id')
                     ->orWhereNull('delivery_courier_id');
             })->whereNotIn('status', ['completed', 'cancelled'])->count(),
-            'active_processing_count' => Order::where('customer_id', $customerId)->whereNotIn('status', ['completed', 'cancelled', 'pending_payment'])->count(),
+            'active_processing_count' => Order::where('customer_id', $customerId)->whereNotIn('status', ['completed', 'cancelled'])->count(),
             'arrived_at_laundry_count' => Order::where('customer_id', $customerId)->where('status', 'arrived_at_laundry')->count(),
             'ready_delivery_count' => Order::where('customer_id', $customerId)->where('status', 'ready_for_delivery')->count(),
             'delivering_count' => Order::where('customer_id', $customerId)->where('status', 'delivering')->count(),
@@ -52,7 +52,7 @@ class OrderController extends Controller
         if ($request->filled('status') && $request->input('status') !== 'all') {
             $statusFilter = $request->input('status');
             if ($statusFilter === 'active_processing') {
-                $query->whereNotIn('status', ['completed', 'cancelled', 'pending_payment']);
+                $query->whereNotIn('status', ['completed', 'cancelled']);
             } else {
                 $query->where('status', $statusFilter);
             }
@@ -223,7 +223,7 @@ class OrderController extends Controller
                 'payment_date' => now(),
             ]);
 
-            return redirect()->route('customer.orders.show', $order->id)->with('success', 'Laundry order successfully created. Please scan the QRIS code to perform payment simulation.');
+            return redirect()->route('customer.payment.qris-simulation', $order->id);
         } else {
             // Manual Bank Transfer
             Payment::create([
@@ -267,12 +267,12 @@ class OrderController extends Controller
             ]);
         }
 
-        return redirect()->route('dashboard')->with('success', 'Payment successfully confirmed! Awaiting courier assignment.');
+        return redirect()->route('customer.orders.show', $order->id)->with('success', 'Payment successfully confirmed! Awaiting courier assignment.');
     }
 
     public function cancel(Order $order)
     {
-        return redirect()->route('dashboard')->with('error', 'Stripe payment cancelled.');
+        return redirect()->route('customer.orders.show', $order->id)->with('error', 'Stripe payment was cancelled.');
     }
 
     public function show(Order $order)

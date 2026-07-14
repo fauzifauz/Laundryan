@@ -33,6 +33,7 @@ class User extends Authenticatable
         'google_token',
         'last_user_agent',
         'last_login_ip',
+        'onboarding_completed_at',
     ];
 
     /**
@@ -53,6 +54,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'onboarding_completed_at' => 'datetime',
     ];
 
     public function customerOrders()

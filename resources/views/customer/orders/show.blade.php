@@ -183,10 +183,32 @@
                         <p class="text-gray-700 font-bold text-xs italic bg-gray-50 p-4 rounded-2xl border border-gray-100">"{{ $order->review->comment }}"</p>
                     @endif
                 </div>
-                <div>
-                    <a href="{{ route('customer.orders.invoice', $order->id) }}" class="inline-flex items-center gap-1 bg-brand/5 hover:bg-brand/10 text-brand font-black text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap">
-                        <span class="material-symbols-outlined text-[16px]">download</span>
-                        Download Invoice PDF
+                <div x-data="{ loading: false }">
+                    <a href="{{ route('customer.orders.invoice', $order->id) }}"
+                       @click.prevent="
+                           if (loading) return;
+                           loading = true;
+                           fetch($el.href)
+                               .then(response => {
+                                   if (!response.ok) throw new Error('Download failed');
+                                   return response.blob();
+                               })
+                               .then(blob => {
+                                   const url = window.URL.createObjectURL(blob);
+                                   const a = document.createElement('a');
+                                   a.href = url;
+                                   a.download = 'Invoice-{{ $order->order_code }}.pdf';
+                                   document.body.appendChild(a);
+                                   a.click();
+                                   a.remove();
+                                   window.URL.revokeObjectURL(url);
+                               })
+                               .catch(err => alert('Failed to download invoice.'))
+                               .finally(() => { loading = false; });
+                       "
+                       class="inline-flex items-center gap-1 bg-brand/5 hover:bg-brand/10 text-brand font-black text-xs px-4 py-2.5 rounded-xl transition-all whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[16px]" :class="loading ? 'animate-spin' : ''" x-text="loading ? 'sync' : 'download'">download</span>
+                        <span x-text="loading ? 'Downloading...' : 'Download Invoice PDF'">Download Invoice PDF</span>
                     </a>
                 </div>
             </div>
@@ -344,70 +366,46 @@
                 {{-- Full-width: Photo Documentation --}}
                 @include('partials.order-photo-documentation', ['order' => $order])
 
-                <!-- Live Chat & Status Logs side-by-side -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Live Chat Area -->
-                    <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[400px] overflow-hidden text-left">
-                        <h3 class="text-base font-black text-gray-900 pb-4 border-b border-gray-50 flex items-center gap-2 shrink-0">
-                            <span class="material-symbols-outlined text-brand">forum</span>
-                            Staff Live Chat
-                        </h3>
-                        <div class="flex-1 overflow-y-auto space-y-3 my-4 pr-2 custom-scrollbar" id="chat-scroller">
-                            @forelse($order->messages as $msg)
-                                <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
-                                    <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
-                                        @php
-                                            $roleColors = match($msg->sender->role) {
-                                                'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
-                                                'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                                'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                                default => 'bg-blue-100 text-blue-700 border-blue-200',
-                                            };
-                                            $isMine = $msg->sender_id === auth()->id();
-                                        @endphp
-                                        <p class="text-[9px] mb-1 font-black flex items-center gap-1">
-                                            <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
-                                            <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
-                                                {{ $msg->sender->role }}
-                                            </span>
-                                        </p>
-                                        <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
-                                    </div>
-                                    <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
-                                </div>
-                            @empty
-                                <p class="text-center text-gray-400 py-8 italic text-xs">No messages yet. Ask anything about your order!</p>
-                            @endforelse
-                        </div>
-                        <form action="{{ route('messages.store', $order->id) }}" method="POST" class="mt-auto relative shrink-0">
-                            @csrf
-                            <input type="text" name="message" class="w-full rounded-2xl border-gray-200 pr-12 focus:border-brand focus:ring-brand py-3 text-xs" placeholder="Type a message..." required autocomplete="off">
-                            <button type="submit" class="absolute right-2 top-2 p-1.5 text-brand hover:text-blue-800 transition-colors">
-                                <span class="material-symbols-outlined">send</span>
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Status Logs -->
-                    <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[400px] overflow-hidden text-left">
-                        <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4 shrink-0">Status Logs</h3>
-                        <div class="flex-1 overflow-y-auto pl-6 border-l-2 border-gray-100 space-y-6 my-4 pr-2 custom-scrollbar">
-                            @forelse($order->statusLogs as $log)
-                                <div class="relative">
-                                    <!-- Dot indicator on line -->
-                                    <span class="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-brand ring-4 ring-blue-50"></span>
-                                    <p class="text-xs font-black text-gray-800">
-                                        {{ str_replace('_', ' ', ucfirst($log->status)) }}
+                <!-- Staff Live Chat Area (Widen to match Photo Documentation grid width) -->
+                <div class="bg-white p-6 rounded-3xl shadow-md border border-gray-100 flex flex-col h-[450px] overflow-hidden text-left">
+                    <h3 class="text-base font-black text-gray-900 pb-4 border-b border-gray-50 flex items-center gap-2 shrink-0">
+                        <span class="material-symbols-outlined text-brand">forum</span>
+                        Staff Live Chat
+                    </h3>
+                    <div class="flex-1 overflow-y-auto space-y-3 my-4 pr-2 custom-scrollbar" id="chat-scroller">
+                        @forelse($order->messages as $msg)
+                            <div class="flex flex-col {{ $msg->sender_id === auth()->id() ? 'items-end' : 'items-start' }}">
+                                <div class="max-w-[85%] rounded-2xl p-3.5 {{ $msg->sender_id === auth()->id() ? 'bg-brand text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none' }}">
+                                    @php
+                                        $roleColors = match($msg->sender->role) {
+                                            'admin' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                            'karyawan' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                            'kurir' => 'bg-amber-100 text-amber-700 border-amber-200',
+                                            default => 'bg-blue-100 text-blue-700 border-blue-200',
+                                        };
+                                        $isMine = $msg->sender_id === auth()->id();
+                                    @endphp
+                                    <p class="text-[9px] mb-1 font-black flex items-center gap-1">
+                                        <span class="font-extrabold {{ $isMine ? 'text-white' : 'text-gray-900' }}">{{ $msg->sender->name }}</span>
+                                        <span class="px-1.5 py-0.5 rounded-full border text-[7px] uppercase tracking-wider {{ $roleColors }}">
+                                            {{ $msg->sender->role }}
+                                        </span>
                                     </p>
-                                    <p class="text-[10px] text-gray-400 mt-0.5">
-                                        {{ $log->created_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
-                                    </p>
+                                    <p class="text-xs font-bold leading-normal">{{ $msg->message }}</p>
                                 </div>
-                            @empty
-                                <p class="text-xs text-gray-400 italic">No status log updates yet.</p>
-                            @endforelse
-                        </div>
+                                <span class="text-[8px] text-gray-400 mt-1 uppercase font-bold">{{ $msg->created_at->diffForHumans() }}</span>
+                            </div>
+                        @empty
+                            <p class="text-center text-gray-400 py-8 italic text-xs">No messages yet. Ask anything about your order!</p>
+                        @endforelse
                     </div>
+                    <form action="{{ route('messages.store', $order->id) }}" method="POST" class="mt-auto relative shrink-0">
+                        @csrf
+                        <input type="text" name="message" class="w-full rounded-2xl border-gray-200 pr-12 focus:border-brand focus:ring-brand py-3 text-xs" placeholder="Type a message..." required autocomplete="off">
+                        <button type="submit" class="absolute right-2 top-2 p-1.5 text-brand hover:text-blue-800 transition-colors">
+                            <span class="material-symbols-outlined">send</span>
+                        </button>
+                    </form>
                 </div>
             </div>
 
@@ -621,6 +619,27 @@
                             <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider block mb-1 font-jakarta">Delivery Address</span>
                             <p class="font-bold text-gray-700 leading-relaxed">{{ $order->delivery_address }}</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Status Logs (Relocated below Address Details) -->
+                <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 text-left">
+                    <h3 class="text-base font-black text-gray-900 border-b border-gray-100 pb-4">Status Logs</h3>
+                    <div class="pl-6 border-l-2 border-gray-100 space-y-6 my-4 pr-2 custom-scrollbar">
+                        @forelse($order->statusLogs as $log)
+                            <div class="relative">
+                                <!-- Dot indicator on line -->
+                                <span class="absolute -left-[29px] top-1.5 w-3 h-3 rounded-full bg-brand ring-4 ring-blue-50"></span>
+                                <p class="text-xs font-black text-gray-800">
+                                    {{ str_replace('_', ' ', ucfirst($log->status)) }}
+                                </p>
+                                <p class="text-[10px] text-gray-400 mt-0.5">
+                                    {{ $log->created_at->timezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+                                </p>
+                            </div>
+                        @empty
+                            <p class="text-xs text-gray-400 italic">No status log updates yet.</p>
+                        @endforelse
                     </div>
                 </div>
 

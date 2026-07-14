@@ -44,6 +44,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('dashboard');
     })->name('orders.scan');
 
+    // Customer specific routes
+    Route::middleware('role:pelanggan')->prefix('customer')->name('customer.')->group(function () {
+        Route::get('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/create', [\App\Http\Controllers\Customer\OrderController::class, 'create'])->name('orders.create');
+        Route::post('/orders', [\App\Http\Controllers\Customer\OrderController::class, 'store'])->name('orders.store');
+        Route::post('/orders/calculate-price', [\App\Http\Controllers\Customer\OrderController::class, 'calculatePrice'])->name('orders.calculate-price');
+        Route::get('/orders/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders/{order}/invoice', [\App\Http\Controllers\Customer\OrderController::class, 'invoice'])->name('orders.invoice');
+        Route::post('/orders/{order}/reviews', [\App\Http\Controllers\Customer\ReviewController::class, 'store'])->name('reviews.store');
+        Route::post('/location', [\App\Http\Controllers\Customer\OrderController::class, 'updateLocation'])->name('location.update');
+        
+        // Payments routes
+        Route::get('/payments', [\App\Http\Controllers\Customer\PaymentController::class, 'index'])->name('payments.index');
+        Route::post('/payments/{order}/upload', [\App\Http\Controllers\Customer\PaymentController::class, 'uploadProof'])->name('payments.upload-proof');
+
+        // QRIS Simulation routes
+        Route::get('/orders/{order}/qris-simulation', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulation'])->name('payment.qris-simulation');
+        Route::post('/orders/{order}/qris-simulation/pay', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationPay'])->name('payment.qris-simulation.pay');
+        Route::post('/orders/{order}/qris-simulation/fail', [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationFail'])->name('payment.qris-simulation.fail');
+
+        // Payment callbacks
+        Route::get('/payment/success/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'success'])->name('payment.success');
+        Route::get('/payment/cancel/{order}', [\App\Http\Controllers\Customer\OrderController::class, 'cancel'])->name('payment.cancel');
+
+        // Onboarding Tour
+        Route::post('/onboarding/complete', [\App\Http\Controllers\Customer\OnboardingController::class, 'complete'])->name('onboarding.complete');
+    });
     /*
     |--------------------------------------------------------------------------
     | Customer Routes
@@ -95,42 +122,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
             )->name('location.update');
 
             /*
-            |--------------------------------------------------------------------------
-            | Customer Payment Routes
-            |--------------------------------------------------------------------------
-            */
+|--------------------------------------------------------------------------
+| Customer Payment Routes
+|--------------------------------------------------------------------------
+*/
 
-            Route::get(
-                '/payments',
-                [\App\Http\Controllers\Customer\PaymentController::class, 'index']
-            )->name('payments.index');
+Route::get(
+    '/payments',
+    [\App\Http\Controllers\Customer\PaymentController::class, 'index']
+)->name('payments.index');
 
-            Route::post(
-                '/payments/{order}/upload',
-                [\App\Http\Controllers\Customer\PaymentController::class, 'uploadProof']
-            )->name('payments.upload-proof');
+Route::post(
+    '/payments/{order}/upload',
+    [\App\Http\Controllers\Customer\PaymentController::class, 'uploadProof']
+)->name('payments.upload-proof');
 
-            Route::get(
-                '/orders/{order}/qris-simulation',
-                [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulation']
-            )->name('payment.qris-simulation');
+Route::get(
+    '/orders/{order}/qris-simulation',
+    [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulation']
+)->name('payment.qris-simulation');
 
-            Route::post(
-                '/orders/{order}/qris-simulation/pay',
-                [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationPay']
-            )->name('payment.qris-simulation.pay');
+Route::post(
+    '/orders/{order}/qris-simulation/pay',
+    [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationPay']
+)->name('payment.qris-simulation.pay');
 
-            Route::get(
-                '/payment/success/{order}',
-                [\App\Http\Controllers\Customer\OrderController::class, 'success']
-            )->name('payment.success');
+Route::post(
+    '/orders/{order}/qris-simulation/fail',
+    [\App\Http\Controllers\Customer\PaymentController::class, 'qrisSimulationFail']
+)->name('payment.qris-simulation.fail');
 
-            Route::get(
-                '/payment/cancel/{order}',
-                [\App\Http\Controllers\Customer\OrderController::class, 'cancel']
-            )->name('payment.cancel');
-        });
-});
+Route::get(
+    '/payment/success/{order}',
+    [\App\Http\Controllers\Customer\OrderController::class, 'success']
+)->name('payment.success');
+
+Route::get(
+    '/payment/cancel/{order}',
+    [\App\Http\Controllers\Customer\OrderController::class, 'cancel']
+)->name('payment.cancel');
+
+Route::post(
+    '/onboarding/complete',
+    [\App\Http\Controllers\Customer\OnboardingController::class, 'complete']
+)->name('onboarding.complete');
 
 /*
 |--------------------------------------------------------------------------

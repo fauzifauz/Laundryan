@@ -59,9 +59,9 @@
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">Order Activity</p>
                         <div class="flex items-center gap-3">
                             <!-- Active Link -->
-                            <a href="{{ route('customer.orders.index', ['status' => 'active']) }}" class="flex items-baseline gap-1 hover:text-brand group transition-colors">
+                            <a href="{{ route('customer.orders.index', ['status' => 'active_processing']) }}" class="flex items-baseline gap-1 hover:text-brand group transition-colors">
                                 <span class="text-2xl font-black text-brand group-hover:scale-105 transition-transform">{{ $activeOrdersCount }}</span>
-                                <span class="text-xs text-gray-500 font-bold group-hover:underline">Active</span>
+                                <span class="text-xs text-gray-500 font-bold group-hover:underline">Processing</span>
                             </a>
                             
                             <span class="text-gray-300 font-light">|</span>
@@ -89,9 +89,8 @@
                 </h3>
             </div>
 
-            @forelse($activeOrders as $orderIndex => $order)
-                <div class="order-tracking-card transition-all duration-500" data-order-index="{{ $orderIndex }}"
-                     style="{{ $orderIndex >= 2 ? 'display:none;' : '' }}">
+            @forelse($activeOrders->take(3) as $orderIndex => $order)
+                <div class="order-tracking-card transition-all duration-500" data-order-index="{{ $orderIndex }}">
                 <div class="bg-gray-50/50 rounded-3xl p-6 border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:bg-white hover:shadow-md duration-300">
                     <!-- Order Information Header -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-center border-b border-gray-100/80 pb-6 mb-6">
@@ -222,15 +221,15 @@
                 </div>
             @endforelse
 
-            @if($activeOrders->count() > 2)
-                <!-- Show more / collapse toggle -->
+            @if($activeOrders->count() > 3)
+                <!-- Show more link to My Laundry -->
                 <div class="flex justify-center pt-2">
-                    <button id="toggle-orders-btn"
-                        onclick="toggleMoreOrders()"
+                    <a id="toggle-orders-btn"
+                        href="{{ route('customer.orders.index') }}"
                         class="inline-flex items-center gap-2 text-xs font-black text-brand bg-blue-50 hover:bg-blue-100 border border-blue-100 px-6 py-3 rounded-2xl transition-all duration-300 shadow-sm group">
-                        <span id="toggle-orders-label">Show {{ $activeOrders->count() - 2 }} More Order{{ $activeOrders->count() - 2 > 1 ? 's' : '' }}</span>
-                        <span id="toggle-orders-icon" class="material-symbols-outlined text-[18px] transition-transform duration-300 group-hover:translate-y-0.5">expand_more</span>
-                    </button>
+                        <span id="toggle-orders-label">Show More</span>
+                        <span class="material-symbols-outlined text-[18px] transition-transform duration-300 group-hover:translate-x-0.5">arrow_forward</span>
+                    </a>
                 </div>
             @endif
         </div>
@@ -730,7 +729,16 @@
             document.getElementById('tour-tooltip').classList.add('hidden');
             document.getElementById('tour-backdrop').classList.add('hidden');
             enableScroll();
-            sessionStorage.setItem('onboarding_tour_played', 'true');
+
+            // Notify server that onboarding is complete (persists to DB for non-testing accounts)
+            fetch('{{ route("customer.onboarding.complete") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+            }).catch(() => {}); // Silent fail – non-critical
         }
 
         function updateTourLayout() {
@@ -789,10 +797,10 @@
         window.addEventListener('resize', updateTourLayout);
         window.addEventListener('scroll', updateTourLayout);
 
-        // Auto start tour on page load if session storage is empty
+        // Auto start tour on page load based on server-side flag (set at login)
         window.addEventListener('load', () => {
             setTimeout(() => {
-                if (!sessionStorage.getItem('onboarding_tour_played')) {
+                if ({{ $showOnboarding ? 'true' : 'false' }}) {
                     startOnboardingTour();
                 }
             }, 800);

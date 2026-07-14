@@ -65,6 +65,14 @@
                     </button>
                 </form>
 
+                <form action="{{ route('customer.payment.qris-simulation.fail', $order->id) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-extrabold text-sm py-4 px-6 rounded-2xl shadow-[0_10px_20px_rgba(244,63,94,0.2)] hover:shadow-[0_10px_20px_rgba(244,63,94,0.3)] transition-all duration-300 transform active:scale-95 uppercase tracking-wider">
+                        <span class="material-symbols-outlined text-[18px]">block</span>
+                        Fail Payment (Simulation)
+                    </button>
+                </form>
+
                 <a href="{{ route('customer.orders.show', $order->id) }}" class="text-xs font-bold text-gray-400 hover:text-gray-600 block transition-colors">
                     Go Back to Order Details
                 </a>

@@ -31,8 +31,25 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        
+
         $user = $request->user();
+
+        // Determine if onboarding tour should be shown for pelanggan role.
+        // Special case: pelanggan@laundryan.com always shows onboarding (for developer testing).
+        // For all other pelanggan accounts: show only if onboarding has never been completed.
+        if ($user->role === 'pelanggan') {
+            if ($user->email === 'pelanggan@laundryan.com') {
+                // Always show onboarding for the developer testing account
+                session(['show_onboarding' => true]);
+            } elseif (is_null($user->onboarding_completed_at)) {
+                // First-time login: onboarding not yet completed
+                session(['show_onboarding' => true]);
+            } else {
+                // Returning user: onboarding already completed, do not show
+                session(['show_onboarding' => false]);
+            }
+        }
+
         if ($user->role === 'admin') {
             return redirect()->intended(route('admin.dashboard', absolute: false));
         } elseif ($user->role === 'karyawan') {

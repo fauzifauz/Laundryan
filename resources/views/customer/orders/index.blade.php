@@ -65,34 +65,7 @@
                 </button>
             </div>
 
-            @if(request()->anyFilled(['status', 'search', 'courier_assigned']) || (request()->filled('filter_period') && request('filter_period') !== 'all'))
-                <div class="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-2xl flex justify-between items-center shadow-sm"
-                    role="alert">
-                    <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-blue-600">filter_alt</span>
-                        <span class="text-sm font-bold">
-                            Showing orders filtered by: 
-                            @if(request()->filled('search'))
-                                Search: <span class="underline font-black">"{{ request('search') }}"</span>
-                            @endif
-                            @if(request()->filled('status') && request('status') !== 'all')
-                                Status: <span class="underline font-black">{{ str_replace('_', ' ', request('status')) }}</span>
-                            @endif
-                            @if(request()->input('courier_assigned') === 'unassigned')
-                                Courier: <span class="underline font-black">Unassigned</span>
-                            @endif
-                            @if(request()->filled('filter_period') && request('filter_period') !== 'all')
-                                @php
-                                    $periodLabels = ['harian' => 'Daily', 'mingguan' => 'Weekly', 'bulanan' => 'Monthly', 'tahunan' => 'Yearly'];
-                                @endphp
-                                Period: <span class="underline font-black">{{ $periodLabels[request('filter_period')] ?? request('filter_period') }}</span>
-                            @endif
-                        </span>
-                    </div>
-                    <a href="{{ route('customer.orders.index') }}"
-                        class="text-xs font-black text-blue-600 hover:text-blue-800 bg-white border border-blue-100 px-3 py-1 rounded-xl shadow-sm transition-all hover:scale-105">Clear Filter</a>
-                </div>
-            @endif
+
 
             <!-- Statistics Grid (KPI Cards) -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -110,7 +83,7 @@
                 </a>
 
                 <!-- Card 2: Today's Orders -->
-                <a href="{{ route('customer.orders.index', ['filter_period' => 'today']) }}"
+                <a href="{{ route('customer.orders.index', ['filter_period' => 'harian']) }}"
                     class="bg-white rounded-3xl border border-gray-100 p-5 shadow-sm flex items-center gap-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group hover:scale-[1.02] duration-200">
                     <div
                         class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
