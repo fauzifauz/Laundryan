@@ -2,36 +2,52 @@
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-xs font-black uppercase tracking-[0.25em] text-blue-600">
-                    Courier Operations
-                </p>
-
-                <h2 class="mt-1 text-2xl font-black text-gray-900">
-                    Dashboard Kurir
+                <h2 class="text-2xl font-black text-gray-900">
+                    Courier Dashboard
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                    Ringkasan tugas pickup, delivery, aktivitas, dan performa.
+                    Summary of pickup, delivery, activity, and performance tasks.
                 </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-                <span
-                    id="gps-status"
-                    class="rounded-full bg-gray-100 px-4 py-2 text-xs font-black text-gray-500"
+                <div
+                    id="gps-status-card"
+                    class="inline-flex items-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-2.5 shadow-sm transition hover:shadow-md"
                 >
-                    📍 GPS menunggu...
-                </span>
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span
+                            id="gps-status-ping"
+                            class="absolute inline-flex h-full w-full animate-ping rounded-full bg-gray-300 opacity-75"
+                        ></span>
 
-                <a
-                    href="{{ route('kurir.orders.index') }}"
+                        <span
+                            id="gps-status-dot"
+                            class="relative inline-flex h-2.5 w-2.5 rounded-full bg-gray-400"
+                        ></span>
+                    </span>
+
+                    <div class="leading-tight">
+                        <p id="gps-status-label" class="text-[11px] font-black uppercase tracking-widest text-gray-600">
+                            GPS Pending
+                        </p>
+
+                        <p id="gps-status-time" class="text-[10px] font-semibold text-gray-400">
+                            Waiting for signal…
+                        </p>
+                    </div>
+                </div>
+
+                
+                 <a href="{{ route('kurir.orders.index') }}"
                     class="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700"
                 >
                     <span class="material-symbols-outlined text-lg">
                         shopping_basket
                     </span>
 
-                    Order & Riwayat
+                    Orders & History
                 </a>
             </div>
         </div>
@@ -59,6 +75,28 @@
 
         $ratingAverage = (float) ($ratingSummary['average'] ?? 0);
         $roundedRating = (int) round($ratingAverage);
+
+        $courierGreetingConfig = [
+            'GOOD MORNING' => [
+                'icon' => 'wb_sunny',
+                'subtitle' => "Rise and shine! Ready to handle today's pickups and deliveries?",
+            ],
+            'GOOD AFTERNOON' => [
+                'icon' => 'wb_twilight',
+                'subtitle' => 'Good afternoon! Keep the deliveries moving.',
+            ],
+            'GOOD EVENING' => [
+                'icon' => 'filter_drama',
+                'subtitle' => "Good evening! Wrap up today's remaining tasks.",
+            ],
+            'GOOD NIGHT' => [
+                'icon' => 'bedtime',
+                'subtitle' => 'Operational hours are ending. Have a peaceful night!',
+            ],
+        ];
+
+        $currentCourierGreeting = $courierGreetingConfig[(string) ($greeting ?? 'GOOD MORNING')]
+            ?? $courierGreetingConfig['GOOD MORNING'];
     @endphp
 
     <div class="py-8">
@@ -90,27 +128,24 @@
                         </div>
 
                         <div>
-                            <p class="text-xs font-black uppercase tracking-[0.25em] text-blue-100">
-                                Selamat datang
-                            </p>
-
-                            <h1 class="mt-1 text-2xl font-black md:text-3xl">
-                                {{ auth()->user()->name }}
+                            <div>
+                            <h1 class="text-2xl font-black uppercase tracking-tight md:text-3xl">
+                                Hello Courier, {{ $greeting ?? 'GOOD MORNING' }}!
                             </h1>
 
                             <p class="mt-1 text-sm font-medium text-blue-100">
-                                Pastikan lokasi aktif selama menangani tugas.
+                                {{ $currentCourierGreeting['subtitle'] }}
                             </p>
                         </div>
                     </div>
 
                     <div class="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 backdrop-blur">
                         <p class="text-xs font-black uppercase tracking-widest text-blue-100">
-                            Hari ini
+                            Today
                         </p>
 
                         <p class="mt-1 font-bold">
-                            {{ now()->translatedFormat('l, d F Y') }}
+                            {{ now()->format('l, d F Y') }}
                         </p>
                     </div>
                 </div>
@@ -142,9 +177,9 @@
                     </p>
 
                     <p class="mt-1 text-xs font-semibold text-gray-500">
-                        Tugas pickup aktif
+                        Active pickup tasks
                     </p>
-                </a>
+                </href=>
 
                 <a
                     href="{{ route('kurir.orders.index', [
@@ -155,8 +190,8 @@
                 >
                     <div class="flex items-center justify-between">
                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                            <span class="material-symbols-outlined">
-                                local_shipping
+                            <span class="material-symbols-outlined text-4xl">
+                                {{ $currentCourierGreeting['icon'] }}
                             </span>
                         </div>
 
@@ -170,7 +205,7 @@
                     </p>
 
                     <p class="mt-1 text-xs font-semibold text-gray-500">
-                        Tugas delivery aktif
+                        Active delivery tasks
                     </p>
                 </a>
 
@@ -188,7 +223,7 @@
                         </div>
 
                         <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                            Selesai
+                            Completed
                         </span>
                     </div>
 
@@ -197,7 +232,7 @@
                     </p>
 
                     <p class="mt-1 text-xs font-semibold text-gray-500">
-                        Order diselesaikan
+                        Orders completed
                     </p>
                 </a>
 
@@ -224,11 +259,13 @@
                     </p>
 
                     <p class="mt-1 text-xs font-semibold text-gray-500">
-                        Seluruh penugasan
+                        All assignments
                     </p>
                 </a>
 
-                <div class="col-span-2 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm lg:col-span-1">
+                <a href="{{ route('kurir.performance') }}"
+                    class="col-span-2 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg lg:col-span-1"
+                >
                     <div class="flex items-center justify-between">
                         <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-500">
                             <span class="material-symbols-outlined">
@@ -237,7 +274,7 @@
                         </div>
 
                         <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                            Performa
+                            Performance
                         </span>
                     </div>
 
@@ -263,9 +300,9 @@
 
                     <p class="mt-2 text-xs font-semibold text-gray-500">
                         {{ number_format($ratingSummary['count'] ?? 0) }}
-                        penilaian pelanggan
+                        customer reviews
                     </p>
-                </div>
+                </a>
             </section>
 
             <div class="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-3">
@@ -274,24 +311,27 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-black text-gray-900">
-                                Tugas Aktif
+                                Active Tasks
                             </h3>
 
                             <p class="text-sm text-gray-500">
-                                Urutan tugas berdasarkan lokasi terdekat.
+                                Tasks sorted by nearest location.
                             </p>
                         </div>
 
-                        <a
-                            href="{{ route('kurir.orders.index', ['scope' => 'active']) }}"
+                        
+                            <a href="{{ route('kurir.orders.index', ['scope' => 'active']) }}"
                             class="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
                         >
-                            Lihat semua
+                            View all
                         </a>
                     </div>
 
-                    <div id="order-list" class="mt-4 flex flex-1 flex-col gap-4">
-                        @forelse($orders->take(3) as $order)
+                    <div
+                        id="order-list"
+                        class="mt-4 flex max-h-[620px] flex-1 flex-col gap-4 overflow-y-auto pr-1 scroll-thin"
+                    >
+                        @forelse($orders as $order)
                             @php
                                 $isPickup = in_array(
                                     $order->status,
@@ -327,11 +367,11 @@
 
                                 $customerName =
                                     $order->customer?->name
-                                    ?? 'Pelanggan';
+                                    ?? 'Customer';
                             @endphp
 
                             <article
-                                class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm transition hover:shadow-lg"
+                                class="flex-shrink-0 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm transition hover:shadow-lg"
                                 data-order-id="{{ $order->id }}"
                             >
                                 <div class="flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
@@ -388,7 +428,7 @@
                                             href="{{ route('kurir.orders.show', $order) }}"
                                             class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-xs font-black text-white transition hover:bg-blue-600"
                                         >
-                                            Buka Detail
+                                            View Details
 
                                             <span class="material-symbols-outlined text-base">
                                                 arrow_forward
@@ -410,7 +450,7 @@
                                 </h4>
 
                                 <p class="mt-2 text-sm text-gray-500">
-                                    Tugas baru akan muncul setelah ditugaskan oleh admin.
+                                    New tasks will appear once assigned by the admin.
                                 </p>
                             </div>
                         @endforelse
@@ -429,11 +469,11 @@
 
                             <div>
                                 <h3 class="font-black text-gray-900">
-                                    Performa Kurir
+                                    Courier Performance
                                 </h3>
 
                                 <p class="text-xs text-gray-500">
-                                    Berdasarkan rating pelanggan
+                                    Based on customer ratings
                                 </p>
                             </div>
                         </div>
@@ -442,7 +482,7 @@
                             <div>
                                 <div class="mb-2 flex items-center justify-between">
                                     <p class="text-xs font-black uppercase tracking-widest text-gray-400">
-                                        Rating Pickup
+                                        Pickup Rating
                                     </p>
 
                                     <p class="font-black text-gray-900">
@@ -461,7 +501,7 @@
                             <div>
                                 <div class="mb-2 flex items-center justify-between">
                                     <p class="text-xs font-black uppercase tracking-widest text-gray-400">
-                                        Rating Delivery
+                                        Delivery Rating
                                     </p>
 
                                     <p class="font-black text-gray-900">
@@ -483,95 +523,65 @@
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="font-black text-gray-900">
-                                    Aktivitas Hari Ini
+                                    Today's Activity
                                 </h3>
 
                                 <p class="text-xs text-gray-500">
-                                    Perubahan status terbaru
+                                    Latest status updates
                                 </p>
                             </div>
 
-                            <div class="flex items-center gap-2">
-                                @if($recentActivities->count() > 4)
-                                    <button
-                                        type="button"
-                                        id="activity-scroll-left"
-                                        aria-label="Geser aktivitas ke kiri"
-                                        class="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                    >
-                                        <span class="material-symbols-outlined text-lg">
-                                            chevron_left
-                                        </span>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        id="activity-scroll-right"
-                                        aria-label="Geser aktivitas ke kanan"
-                                        class="flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                                    >
-                                        <span class="material-symbols-outlined text-lg">
-                                            chevron_right
-                                        </span>
-                                    </button>
-                                @endif
-
-                                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                                    <span class="material-symbols-outlined">
-                                        history
-                                    </span>
-                                </div>
+                            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                                <span class="material-symbols-outlined">
+                                    history
+                                </span>
                             </div>
                         </div>
 
                         <div
                             id="activity-list"
-                            class="activity-scroll-x mt-5 flex flex-1 snap-x snap-mandatory overflow-x-auto scroll-smooth"
+                            class="scroll-thin mt-5 flex max-h-[340px] flex-col gap-4 overflow-y-auto pr-1"
                         >
-                            @forelse($recentActivities->chunk(4) as $activityPage)
-                                <div class="w-full flex-shrink-0 snap-start space-y-4 pr-1">
-                                    @foreach($activityPage as $activity)
-                                        @php
-                                            $activityStatusLabel =
-                                                $statusLabels[$activity->status]
-                                                ?? ucfirst(
-                                                    str_replace(
-                                                        '_',
-                                                        ' ',
-                                                        $activity->status
-                                                    )
-                                                );
-                                        @endphp
+                            @forelse($recentActivities as $activity)
+                                @php
+                                    $activityStatusLabel =
+                                        $statusLabels[$activity->status]
+                                        ?? ucfirst(
+                                            str_replace(
+                                                '_',
+                                                ' ',
+                                                $activity->status
+                                            )
+                                        );
+                                @endphp
 
-                                        <div class="flex gap-3">
-                                            <div class="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50"></div>
+                                <div class="flex gap-3">
+                                    <div class="mt-1 h-3 w-3 flex-shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-50"></div>
 
-                                            <div class="min-w-0 flex-1">
-                                                <p class="truncate text-xs font-black text-gray-800">
-                                                    {{ $activity->order?->order_code ?? '-' }}
-                                                    —
-                                                    {{ $activityStatusLabel }}
-                                                </p>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-xs font-black text-gray-800">
+                                            {{ $activity->order?->order_code ?? '-' }}
+                                            —
+                                            {{ $activityStatusLabel }}
+                                        </p>
 
-                                                <p class="mt-1 truncate text-xs text-gray-500">
-                                                    {{ $activity->order?->customer?->name ?? 'Pelanggan' }}
-                                                </p>
+                                        <p class="mt-1 truncate text-xs text-gray-500">
+                                            {{ $activity->order?->customer?->name ?? 'Customer' }}
+                                        </p>
 
-                                                <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                                    {{ $activity->created_at->format('H:i') }}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                        <p class="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                            {{ $activity->created_at->format('H:i') }}
+                                        </p>
+                                    </div>
                                 </div>
                             @empty
-                                <div class="flex w-full flex-shrink-0 flex-1 flex-col items-center justify-center rounded-2xl bg-gray-50 px-4 py-8 text-center">
+                                <div class="flex flex-1 flex-col items-center justify-center rounded-2xl bg-gray-50 px-4 py-8 text-center">
                                     <span class="material-symbols-outlined text-3xl text-gray-300">
                                         history_toggle_off
                                     </span>
 
                                     <p class="mt-2 text-xs font-semibold text-gray-500">
-                                        Belum ada aktivitas hari ini.
+                                        No activity yet today.
                                     </p>
                                 </div>
                             @endforelse
@@ -585,11 +595,11 @@
                 <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5">
                     <div>
                         <h3 class="text-lg font-black text-gray-900">
-                            Riwayat Order Terbaru
+                            Recent Order History
                         </h3>
 
                         <p class="text-sm text-gray-500">
-                            Lima order terakhir yang ditugaskan.
+                            The last five orders assigned to you.
                         </p>
                     </div>
 
@@ -597,7 +607,7 @@
                         href="{{ route('kurir.orders.index', ['scope' => 'all']) }}"
                         class="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-800"
                     >
-                        Semua riwayat
+                        View all history
                     </a>
                 </div>
 
@@ -634,7 +644,7 @@
                                 </p>
 
                                 <h4 class="mt-1 truncate font-black text-gray-900">
-                                    {{ $recentOrder->customer?->name ?? 'Pelanggan' }}
+                                    {{ $recentOrder->customer?->name ?? 'Customer' }}
                                 </h4>
 
                                 <p class="mt-1 text-xs font-semibold text-gray-500">
@@ -666,7 +676,7 @@
                     @empty
                         <div class="px-6 py-14 text-center">
                             <p class="text-sm font-semibold text-gray-500">
-                                Belum ada riwayat order.
+                                No order history yet.
                             </p>
                         </div>
                     @endforelse
@@ -676,13 +686,18 @@
     </div>
 
     <style>
-        .activity-scroll-x {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+        .scroll-thin {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
         }
 
-        .activity-scroll-x::-webkit-scrollbar {
-            display: none;
+        .scroll-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-thin::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 9999px;
         }
     </style>
 
@@ -702,9 +717,26 @@
 
             let lastSentAt = 0;
 
-            function updateGpsStatus(message, className) {
-                gpsStatus.textContent = message;
-                gpsStatus.className = className;
+            const gpsDot = document.getElementById('gps-status-dot');
+            const gpsPing = document.getElementById('gps-status-ping');
+            const gpsLabel = document.getElementById('gps-status-label');
+            const gpsTime = document.getElementById('gps-status-time');
+
+            function updateGpsStatus(label, timeText, colorKey) {
+                const colors = {
+                    gray: { dot: 'bg-gray-400', ping: 'bg-gray-300', text: 'text-gray-600' },
+                    green: { dot: 'bg-green-500', ping: 'bg-green-400', text: 'text-green-700' },
+                    red: { dot: 'bg-red-500', ping: 'bg-red-400', text: 'text-red-700' },
+                    yellow: { dot: 'bg-amber-500', ping: 'bg-amber-400', text: 'text-amber-700' },
+                };
+
+                const c = colors[colorKey] || colors.gray;
+
+                gpsDot.className = `relative inline-flex h-2.5 w-2.5 rounded-full ${c.dot}`;
+                gpsPing.className = `absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${c.ping}`;
+                gpsLabel.className = `text-[11px] font-black uppercase tracking-widest ${c.text}`;
+                gpsLabel.textContent = label;
+                gpsTime.textContent = timeText;
             }
 
             function sendLocation(latitude, longitude) {
@@ -732,14 +764,14 @@
                 })
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Gagal mengirim lokasi.');
+                            throw new Error('Failed to send location.');
                         }
 
                         return response.json();
                     })
                     .then(() => {
                         const time = new Date().toLocaleTimeString(
-                            'id-ID',
+                            'en-US',
                             {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -748,14 +780,16 @@
                         );
 
                         updateGpsStatus(
-                            `📍 GPS aktif — ${time}`,
-                            'rounded-full bg-green-100 px-4 py-2 text-xs font-black text-green-700'
+                            'GPS Active',
+                            `Last update — ${time}`,
+                            'green'
                         );
                     })
                     .catch(() => {
                         updateGpsStatus(
-                            '⚠️ GPS gagal dikirim',
-                            'rounded-full bg-red-100 px-4 py-2 text-xs font-black text-red-700'
+                            'GPS Failed',
+                            'Could not send location',
+                            'red'
                         );
                     });
             }
@@ -763,8 +797,9 @@
             function startTracking() {
                 if (!navigator.geolocation) {
                     updateGpsStatus(
-                        '❌ GPS tidak didukung',
-                        'rounded-full bg-red-100 px-4 py-2 text-xs font-black text-red-700'
+                        'GPS Unsupported',
+                        'This browser has no GPS support',
+                        'red'
                     );
 
                     return;
@@ -779,8 +814,9 @@
                     },
                     () => {
                         updateGpsStatus(
-                            '⚠️ Izin GPS ditolak',
-                            'rounded-full bg-yellow-100 px-4 py-2 text-xs font-black text-yellow-700'
+                            'GPS Denied',
+                            'Location permission was denied',
+                            'yellow'
                         );
                     },
                     {
@@ -795,32 +831,12 @@
                 startTracking();
             @else
                 updateGpsStatus(
-                    '📍 Tidak ada tugas aktif',
-                    'rounded-full bg-gray-100 px-4 py-2 text-xs font-black text-gray-500'
+                    'No Active Tasks',
+                    'GPS tracking is idle',
+                    'gray'
                 );
             @endif
 
-            const activityList = document.getElementById('activity-list');
-            const activityScrollLeft = document.getElementById('activity-scroll-left');
-            const activityScrollRight = document.getElementById('activity-scroll-right');
-
-            if (activityList && activityScrollLeft) {
-                activityScrollLeft.addEventListener('click', () => {
-                    activityList.scrollBy({
-                        left: -activityList.clientWidth,
-                        behavior: 'smooth',
-                    });
-                });
-            }
-
-            if (activityList && activityScrollRight) {
-                activityScrollRight.addEventListener('click', () => {
-                    activityList.scrollBy({
-                        left: activityList.clientWidth,
-                        behavior: 'smooth',
-                    });
-                });
-            }
 
             const flashMessage = document.getElementById(
                 'flash-message'

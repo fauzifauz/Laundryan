@@ -15,14 +15,16 @@ class MessageController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
-        // Basic authorization: user must be admin, or linked to the order
         $user = auth()->user();
-        if ($user->role !== 'admin' && 
-            $order->customer_id !== $user->id && 
-            $order->courier_id !== $user->id &&
-            $user->role !== 'karyawan') {
-            abort(403);
-        }
+
+        // Basic authorization: user must be admin, or linked to the order
+        $isAllowed = in_array($user->role, ['admin', 'karyawan'], true)
+            || $order->customer_id === $user->id
+            || $order->courier_id === $user->id
+            || $order->pickup_courier_id === $user->id
+            || $order->delivery_courier_id === $user->id;
+
+        abort_unless($isAllowed, 403);
 
         $message = Message::create([
             'order_id' => $order->id,

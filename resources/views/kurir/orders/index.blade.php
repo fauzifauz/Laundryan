@@ -2,21 +2,17 @@
     <x-slot name="header">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-xs font-black uppercase tracking-[0.25em] text-[#005bc0]">
-                    Courier Operations
-                </p>
-
                 <h2 class="mt-1 text-2xl font-black text-gray-900">
-                    Order & Riwayat
+                    Orders & History
                 </h2>
 
                 <p class="mt-1 text-sm text-gray-500">
-                    Daftar tugas pickup dan delivery yang ditugaskan kepada kurir.
+                    List of pickup and delivery tasks assigned to you.
                 </p>
             </div>
 
             <a
-                href="{{ route('kurir.dashboard') }}"
+                href="{{ route('kurir.delivery-board') }}"
                 class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#005bc0] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-[#004899]"
             >
                 <span class="material-symbols-outlined text-lg">
@@ -75,7 +71,7 @@
                 </p>
 
                 <p class="mt-1 text-xs font-semibold text-gray-500">
-                    Semua order
+                    All orders
                 </p>
             </a>
 
@@ -91,7 +87,7 @@
                     </div>
 
                     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Aktif
+                        Active
                     </span>
                 </div>
 
@@ -100,7 +96,7 @@
                 </p>
 
                 <p class="mt-1 text-xs font-semibold text-gray-500">
-                    Belum selesai
+                    Not finished yet
                 </p>
             </a>
 
@@ -116,7 +112,7 @@
                     </div>
 
                     <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        Selesai
+                        Completed
                     </span>
                 </div>
 
@@ -125,14 +121,14 @@
                 </p>
 
                 <p class="mt-1 text-xs font-semibold text-gray-500">
-                    Order selesai
+                    Completed orders
                 </p>
             </a>
 
             <a
                 href="{{ route('kurir.orders.index', [
-                    'scope' => 'all',
-                    'type' => 'pickup',
+                    'scope' => 'active',
+                    'type' => 'delivery',
                 ]) }}"
                 class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
             >
@@ -153,13 +149,13 @@
                 </p>
 
                 <p class="mt-1 text-xs font-semibold text-gray-500">
-                    Penjemputan
+                    Pickup tasks
                 </p>
             </a>
 
             <a
                 href="{{ route('kurir.orders.index', [
-                    'scope' => 'all',
+                    'scope' => 'active',
                     'type' => 'delivery',
                 ]) }}"
                 class="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
@@ -181,7 +177,7 @@
                 </p>
 
                 <p class="mt-1 text-xs font-semibold text-gray-500">
-                    Pengantaran
+                    Delivery tasks
                 </p>
             </a>
         </section>
@@ -198,7 +194,7 @@
                         for="search"
                         class="mb-2 block text-xs font-black uppercase tracking-widest text-gray-400"
                     >
-                        Cari Order
+                        Search Order
                     </label>
 
                     <div class="relative">
@@ -222,7 +218,7 @@
                         for="scope"
                         class="mb-2 block text-xs font-black uppercase tracking-widest text-gray-400"
                     >
-                        Riwayat
+                        History
                     </label>
 
                     <select
@@ -231,15 +227,15 @@
                         class="w-full rounded-2xl border-gray-200 py-3 text-sm font-semibold focus:border-[#005bc0] focus:ring-[#005bc0]"
                     >
                         <option value="active" @selected($scope === 'active')>
-                            Order Aktif
+                            Order Active
                         </option>
 
                         <option value="completed" @selected($scope === 'completed')>
-                            Selesai
+                            Completed
                         </option>
 
                         <option value="all" @selected($scope === 'all')>
-                            Semua
+                            All
                         </option>
                     </select>
                 </div>
@@ -249,7 +245,7 @@
                         for="type"
                         class="mb-2 block text-xs font-black uppercase tracking-widest text-gray-400"
                     >
-                        Jenis Tugas
+                        Task Type
                     </label>
 
                     <select
@@ -285,7 +281,7 @@
                         class="w-full rounded-2xl border-gray-200 py-3 text-sm font-semibold focus:border-[#005bc0] focus:ring-[#005bc0]"
                     >
                         <option value="">
-                            Semua Status
+                            All Status
                         </option>
 
                         @foreach($statusOptions as $statusValue => $optionLabel)
@@ -481,7 +477,7 @@
 
                                 @if($order->notes)
                                     <div class="mt-3 rounded-xl bg-yellow-50 px-3 py-2 text-xs font-semibold text-yellow-800">
-                                        Catatan: {{ $order->notes }}
+                                        Notes: {{ $order->notes }}
                                     </div>
                                 @endif
                             </div>
@@ -494,7 +490,7 @@
                                         location_on
                                     </span>
 
-                                    Alamat Pickup
+                                    Pickup Address
                                 </p>
 
                                 <p class="mt-2 text-xs font-semibold leading-relaxed text-gray-700">
@@ -508,7 +504,7 @@
                                         flag
                                     </span>
 
-                                    Alamat Delivery
+                                    Delivery Address
                                 </p>
 
                                 <p class="mt-2 text-xs font-semibold leading-relaxed text-gray-700">
@@ -520,7 +516,7 @@
                         <div class="flex flex-shrink-0 flex-col gap-3 lg:items-end">
                             <div class="text-left lg:text-right">
                                 <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                                    Terakhir Diperbarui
+                                    Last Updated
                                 </p>
 
                                 <p class="mt-1 text-xs font-bold text-gray-700">
@@ -532,7 +528,7 @@
                                 href="{{ route('kurir.orders.show', $order) }}"
                                 class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-5 py-3 text-xs font-black text-white transition hover:bg-[#005bc0]"
                             >
-                                Lihat Detail
+                                View Detail
 
                                 <span class="material-symbols-outlined text-base">
                                     arrow_forward
@@ -550,11 +546,11 @@
                     </div>
 
                     <h3 class="mt-5 text-lg font-black text-gray-800">
-                        Order tidak ditemukan
+                        No orders found
                     </h3>
 
                     <p class="mt-2 text-sm text-gray-500">
-                        Belum ada order yang sesuai dengan filter tersebut.
+                        No orders match this filter yet.
                     </p>
 
                     <a
