@@ -655,6 +655,11 @@ Route::middleware(['auth', 'verified', 'role:kurir'])
             [\App\Http\Controllers\Courier\OrderController::class, 'index']
         )->name('dashboard');
 
+        Route::get(
+            '/performance',
+            [\App\Http\Controllers\Courier\OrderController::class, 'performance']
+        )->name('performance');
+
         /*
          * Harus berada sebelum /orders/{order},
          * agar "orders" tidak dianggap sebagai parameter order.
@@ -674,6 +679,11 @@ Route::middleware(['auth', 'verified', 'role:kurir'])
             [\App\Http\Controllers\Courier\OrderController::class, 'show']
         )->name('orders.show');
 
+        Route::get(
+            '/orders/{order}/route',
+            [\App\Http\Controllers\Courier\OrderController::class, 'routeData']
+        )->name('orders.route'); 
+        
         Route::post(
             '/orders/{order}/status',
             [\App\Http\Controllers\Courier\OrderController::class, 'updateStatus']

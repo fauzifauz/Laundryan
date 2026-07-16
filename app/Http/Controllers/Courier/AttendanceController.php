@@ -9,11 +9,73 @@ use Illuminate\Support\Carbon;
 
 class AttendanceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $attendance = Attendance::where('user_id', auth()->id())
             ->where('date', Carbon::today())
             ->first();
+
+        // Get filter inputs
+        $period      = $request->input('period', 'monthly');
+        $dateVal     = $request->input('date', now()->toDateString());
+        $weekVal     = $request->input('week', now()->format('Y-\WW'));
+        $filterMonth = $request->input('filter_month', now()->format('Y-m'));
+        $filterYear  = $request->input('filter_year', now()->year);
+
+        // Determine start and end dates
+        if ($period === 'daily' && $request->filled('date')) {
+            $startDate = Carbon::parse($dateVal);
+            $endDate   = $startDate->copy();
+        } elseif ($period === 'weekly' && $request->filled('week')) {
+            try {
+                $startDate = Carbon::parse($weekVal . '-1');
+                $endDate   = $startDate->copy()->endOfWeek();
+            } catch (\Exception $e) {
+                $startDate = now()->startOfWeek();
+                $endDate   = now()->endOfWeek();
+            }
+        } elseif ($period === 'monthly' && $request->filled('filter_month')) {
+            $startDate = Carbon::parse($filterMonth . '-01')->startOfMonth();
+            $endDate   = $startDate->copy()->endOfMonth();
+        } elseif ($period === 'yearly') {
+            $startDate = Carbon::create($filterYear, 1, 1)->startOfYear();
+            $endDate   = $startDate->copy()->endOfYear();
+        } else {
+            // Default to monthly current
+            $startDate = now()->startOfMonth();
+            $endDate   = now()->endOfMonth();
+        }
+
+        // Cap end date at today so we don't display future days as absent
+        $capEndDate = $endDate->gt(today()) ? today() : $endDate;
+
+        // Generate date range descending
+        $dates = [];
+        if ($startDate->lte($capEndDate)) {
+            $curr = $startDate->copy();
+            while ($curr->lte($capEndDate)) {
+                $dates[] = $curr->toDateString();
+                $curr->addDay();
+            }
+        }
+        $dates = array_reverse($dates);
+
+        // Query attendance records for the range
+        $attendances = Attendance::where('user_id', auth()->id())
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->get()
+            ->keyBy('date');
+
+        // Leave & Permission history lists
+        $leaveHistory = Attendance::where('user_id', auth()->id())
+            ->where('status', 'leave')
+            ->latest('date')
+            ->get();
+
+        $permissionHistory = Attendance::where('user_id', auth()->id())
+            ->where('status', 'permit')
+            ->latest('date')
+            ->get();
 
         $leaveQuotaUsed = Attendance::leavePermissionQuotaUsed(auth()->id());
         $leaveQuotaMax = Attendance::LEAVE_PERMISSION_QUOTA_PER_YEAR;
@@ -21,6 +83,15 @@ class AttendanceController extends Controller
 
         return view('kurir.attendance.index', compact(
             'attendance',
+            'dates',
+            'attendances',
+            'leaveHistory',
+            'permissionHistory',
+            'period',
+            'dateVal',
+            'weekVal',
+            'filterMonth',
+            'filterYear',
             'leaveQuotaUsed',
             'leaveQuotaMax',
             'canSubmitLeaveRequest'
@@ -35,6 +106,17 @@ class AttendanceController extends Controller
             'longitude' => 'nullable|numeric',
             'location_name' => 'nullable|string',
         ]);
+
+        $approvedExcused = Attendance::where('user_id', auth()->id())
+            ->where('date', Carbon::today())
+            ->whereIn('status', ['leave', 'permit'])
+            ->where('approval_status', 'approved')
+            ->first();
+
+        if ($approvedExcused) {
+            $label = $approvedExcused->status === 'leave' ? 'Leave' : 'Permission';
+            return redirect()->back()->with('error', "You are currently on {$label}. Attendance is not allowed.");
+        }
 
         $attendance = Attendance::where('user_id', auth()->id())
             ->where('date', Carbon::today())
@@ -66,8 +148,19 @@ class AttendanceController extends Controller
         return redirect()->back()->with('success', 'Checked in successfully.');
     }
 
-    public function checkOut()
+    public function checkOut(Request $request)
     {
+        $approvedExcused = Attendance::where('user_id', auth()->id())
+            ->where('date', Carbon::today())
+            ->whereIn('status', ['leave', 'permit'])
+            ->where('approval_status', 'approved')
+            ->first();
+
+        if ($approvedExcused) {
+            $label = $approvedExcused->status === 'leave' ? 'Leave' : 'Permission';
+            return redirect()->back()->with('error', "You are currently on {$label}. Attendance is not allowed.");
+        }
+
         $attendance = Attendance::where('user_id', auth()->id())
             ->where('date', Carbon::today())
             ->first();
@@ -82,6 +175,9 @@ class AttendanceController extends Controller
 
         $attendance->update([
             'check_out' => Carbon::now()->toTimeString(),
+            'latitude' => $request->latitude ?: $attendance->latitude,
+            'longitude' => $request->longitude ?: $attendance->longitude,
+            'location_name' => $request->location_name ?: $attendance->location_name,
         ]);
 
         return redirect()->back()->with('success', 'Checked out successfully.');
@@ -129,6 +225,10 @@ class AttendanceController extends Controller
             'reject_reason' => $request->reason,
         ]);
 
-        return redirect()->back()->with('success', 'Permit/Leave request submitted successfully.');
+        $message = $request->type === 'leave'
+            ? 'Leave request submitted successfully.'
+            : 'Permission request submitted successfully.';
+
+        return redirect()->back()->with('success', $message);
     }
 }

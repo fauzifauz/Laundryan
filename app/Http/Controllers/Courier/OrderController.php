@@ -92,15 +92,26 @@ class OrderController extends Controller
         'delivering' => 'Dalam Pengantaran',
         'completed' => 'Selesai Diantar',
         'cancelled' => 'Dibatalkan',
-
-        'penjemputan' => 'Proses Penjemputan',
-        'dijemput' => 'Laundry Dijemput',
-        'diantar' => 'Dalam Perjalanan ke Laundry',
-        'sampai' => 'Sampai di Laundry',
-        'pengantaran' => 'Dalam Pengantaran',
-        'diantarkan' => 'Selesai Diantar',
-        'selesai' => 'Selesai',
     ];
+    private const COURIER_HIDDEN_STATUSES = [
+        'pending_payment',
+        'washing',
+        'drying_ironing',
+        'packing',
+    ];
+
+    private const STATUS_LABELS_EN = [
+        'waiting_pickup' => 'Waiting for Pickup',
+        'picking_up' => 'Picking Up',
+        'picked_up' => 'Picked Up',
+        'in_transit_to_laundry' => 'On the Way to Laundry',
+        'arrived_at_laundry' => 'Arrived at Laundry',
+        'ready_for_delivery' => 'Ready for Delivery',
+        'delivering' => 'Out for Delivery',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ];
+
 
     private const DEFAULT_LATITUDE = -6.1664983;
 
@@ -187,13 +198,26 @@ class OrderController extends Controller
 
         $statusLabels = self::STATUS_LABELS;
 
+        $hour = now()->hour;
+
+        if ($hour >= 5 && $hour < 12) {
+            $greeting = 'GOOD MORNING';
+        } elseif ($hour >= 12 && $hour < 17) {
+            $greeting = 'GOOD AFTERNOON';
+        } elseif ($hour >= 17 && $hour < 21) {
+            $greeting = 'GOOD EVENING';
+        } else {
+            $greeting = 'GOOD NIGHT';
+        }
+
         return view('kurir.dashboard', compact(
             'orders',
             'statistics',
             'recentActivities',
             'recentOrders',
             'ratingSummary',
-            'statusLabels'
+            'statusLabels',
+            'greeting'
         ));
     }
 
@@ -205,11 +229,52 @@ class OrderController extends Controller
             $courierId
         );
 
+        $pickupActiveQuery = $this->assignedOrdersQuery(
+            $courierId
+        );
+
+        $this->applyTaskTypeFilter(
+            $pickupActiveQuery,
+            'pickup',
+            $courierId
+        );
+
+        $deliveryActiveQuery = $this->assignedOrdersQuery(
+            $courierId
+        );
+
+        $this->applyTaskTypeFilter(
+            $deliveryActiveQuery,
+            'delivery',
+            $courierId
+        );
+
+        $statistics = [
+            'pickup_active' => $pickupActiveQuery
+                ->whereIn(
+                    'status',
+                    self::PICKUP_ACTIVE_STATUSES
+                )
+                ->count(),
+
+            'delivery_active' => $deliveryActiveQuery
+                ->whereIn(
+                    'status',
+                    self::DELIVERY_ACTIVE_STATUSES
+                )
+                ->count(),
+
+            'total' => $orders->count(),
+        ];
+
         $statusLabels = self::STATUS_LABELS;
+        $pickupStatuses = self::PICKUP_ACTIVE_STATUSES;
 
         return view('kurir.delivery-board', compact(
             'orders',
-            'statusLabels'
+            'statistics',
+            'statusLabels',
+            'pickupStatuses'
         ));
     }
 
@@ -254,9 +319,9 @@ class OrderController extends Controller
 
         if (
             $status !== ''
-            && ! array_key_exists(
-                $status,
-                self::STATUS_LABELS
+            && (
+                ! array_key_exists($status, self::STATUS_LABELS)
+                || in_array($status, self::COURIER_HIDDEN_STATUSES, true)
             )
         ) {
             $status = '';
@@ -390,7 +455,9 @@ class OrderController extends Controller
             'delivery' => $deliveryQuery->count(),
         ];
 
-        $statusOptions = self::STATUS_LABELS;
+        $statusOptions = collect(self::STATUS_LABELS_EN)
+            ->except(self::COURIER_HIDDEN_STATUSES)
+            ->all();
 
         return view('kurir.orders.index', compact(
             'orders',
@@ -401,6 +468,59 @@ class OrderController extends Controller
             'scope',
             'type',
             'status'
+        ));
+    }
+
+    public function performance()
+    {
+        $courierId = (int) Auth::id();
+
+        $pickupReviews = Review::query()
+            ->join(
+                'orders',
+                'orders.id',
+                '=',
+                'reviews.order_id'
+            )
+            ->where(
+                'orders.pickup_courier_id',
+                $courierId
+            )
+            ->whereNotNull(
+                'reviews.rating_pickup_courier'
+            )
+            ->with(['order.customer'])
+            ->select('reviews.*')
+            ->latest('reviews.created_at')
+            ->get();
+
+        $deliveryReviews = Review::query()
+            ->join(
+                'orders',
+                'orders.id',
+                '=',
+                'reviews.order_id'
+            )
+            ->where(
+                'orders.delivery_courier_id',
+                $courierId
+            )
+            ->whereNotNull(
+                'reviews.rating_delivery_courier'
+            )
+            ->with(['order.customer'])
+            ->select('reviews.*')
+            ->latest('reviews.created_at')
+            ->get();
+
+        $ratingSummary = $this->getCourierRatingSummary(
+            $courierId
+        );
+
+        return view('kurir.performance', compact(
+            'pickupReviews',
+            'deliveryReviews',
+            'ratingSummary'
         ));
     }
 
@@ -458,6 +578,14 @@ class OrderController extends Controller
             $destinationLongitude,
         ] = $this->getDestinationCoordinates($order);
 
+        $customerOrderHistory = Order::where('customer_id', $order->customer_id)
+        ->where('id', '!=', $order->id)
+        ->whereIn('status', self::FINISHED_STATUSES)
+        ->with(['service', 'itemType'])
+        ->latest('updated_at')
+        ->limit(8)
+        ->get();
+
         return view('kurir.orders.show', compact(
             'order',
             'statusLabel',
@@ -467,7 +595,8 @@ class OrderController extends Controller
             'canUpdateStatus',
             'isPickupFlow',
             'destinationLatitude',
-            'destinationLongitude'
+            'destinationLongitude',
+            'customerOrderHistory'
         ));
     }
 
@@ -664,6 +793,53 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Lokasi kurir berhasil diperbarui.',
+        ]);
+    }
+
+    public function routeData(Order $order)
+    {
+        $courierId = (int) Auth::id();
+
+        abort_unless($this->isAssignedToCourier($order, $courierId), 403);
+
+        $isPickupFlow = $this->isPickupFlow($order->status);
+        $type = $isPickupFlow ? 'pickup' : 'delivery';
+        $statuses = $isPickupFlow ? self::PICKUP_ACTIVE_STATUSES : self::DELIVERY_ACTIVE_STATUSES;
+
+        $query = $this->assignedOrdersQuery($courierId);
+        $this->applyTaskTypeFilter($query, $type, $courierId);
+
+        $stops = $query->whereIn('status', $statuses)
+            ->with('customer')
+            ->get()
+            ->map(function (Order $o) use ($isPickupFlow, $order) {
+                [$lat, $lng] = $this->getDestinationCoordinates($o);
+
+                return [
+                    'id' => $o->id,
+                    'order_code' => $o->order_code,
+                    'customer_name' => $o->customer->name ?? 'Unknown',
+                    'customer_photo' => ($o->customer && $o->customer->photo)
+                        ? asset('storage/' . $o->customer->photo)
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($o->customer->name ?? 'U')
+                            . '&background=' . ($isPickupFlow ? 'F59E0B' : '10B981') . '&color=fff',
+                    'address' => $isPickupFlow ? $o->pickup_address : $o->delivery_address,
+                    'lat' => (float) $lat,
+                    'lng' => (float) $lng,
+                    'is_current' => $o->id === $order->id,
+                ];
+            })
+            ->values();
+
+        $latestLocation = Location::where('user_id', $courierId)->latest()->first();
+
+        return response()->json([
+            'courier_location' => [
+                'lat' => $latestLocation->latitude ?? self::DEFAULT_LATITUDE,
+                'lng' => $latestLocation->longitude ?? self::DEFAULT_LONGITUDE,
+            ],
+            'stops' => $stops,
+            'is_pickup_flow' => $isPickupFlow,
         ]);
     }
 
